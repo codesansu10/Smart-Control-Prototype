@@ -1,0 +1,200 @@
+{
+  "plugins": [
+    "react",
+    "import"
+  ],
+  "rules": {
+    "react/forbid-elements": [
+      "warn",
+      {
+        "forbid": []
+      }
+    ],
+    "no-restricted-imports": [
+      "warn",
+      {
+        "patterns": [
+          {
+            "group": [
+              "ui_kits/website/**"
+            ],
+            "message": "Import design-system components from 'index.js', not component internals."
+          }
+        ]
+      }
+    ],
+    "no-restricted-syntax": [
+      "warn",
+      {
+        "selector": "Literal[value=/#[0-9a-fA-F]{3,8}\\b/]",
+        "message": "Raw hex color — use a design-system color token via var()."
+      },
+      {
+        "selector": "Literal[value=/\\b\\d+px\\b/]",
+        "message": "Raw px value — use a design-system spacing token via var()."
+      },
+      {
+        "selector": "Literal[value=/font-family\\s*:\\s*(?!['\\\"]?(?:Mulish))/i]",
+        "message": "Font not provided by the design system. Available: Mulish."
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/index.js"
+      ],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    }
+  ],
+  "x-omelette": {
+    "components": {},
+    "tokens": [
+      "--oeko-blue",
+      "--oeko-blue-gradient",
+      "--oeko-blue-soft",
+      "--oeko-border",
+      "--oeko-brand-1",
+      "--oeko-brand-2",
+      "--oeko-brand-3",
+      "--oeko-brand-4",
+      "--oeko-brand-5",
+      "--oeko-brand-6",
+      "--oeko-brand-7",
+      "--oeko-brand-8",
+      "--oeko-brand-gradient",
+      "--oeko-divider",
+      "--oeko-dur-base",
+      "--oeko-dur-fast",
+      "--oeko-dur-slow",
+      "--oeko-ease",
+      "--oeko-font-sans",
+      "--oeko-fs-12",
+      "--oeko-fs-14",
+      "--oeko-fs-16",
+      "--oeko-fs-18",
+      "--oeko-fs-20",
+      "--oeko-fs-24",
+      "--oeko-fs-25",
+      "--oeko-fs-30",
+      "--oeko-fs-35",
+      "--oeko-fs-36",
+      "--oeko-fs-48",
+      "--oeko-fs-60",
+      "--oeko-fs-72",
+      "--oeko-fw-light",
+      "--oeko-fw-regular",
+      "--oeko-lh-body",
+      "--oeko-lh-quote",
+      "--oeko-lh-snug",
+      "--oeko-lh-tight",
+      "--oeko-radius-lg",
+      "--oeko-radius-md",
+      "--oeko-radius-sm",
+      "--oeko-radius-xl",
+      "--oeko-shadow-card",
+      "--oeko-shadow-hover",
+      "--oeko-shadow-soft",
+      "--oeko-space-1",
+      "--oeko-space-10",
+      "--oeko-space-11",
+      "--oeko-space-12",
+      "--oeko-space-13",
+      "--oeko-space-14",
+      "--oeko-space-15",
+      "--oeko-space-2",
+      "--oeko-space-3",
+      "--oeko-space-4",
+      "--oeko-space-5",
+      "--oeko-space-6",
+      "--oeko-space-7",
+      "--oeko-space-8",
+      "--oeko-space-9",
+      "--oeko-surface",
+      "--oeko-surface-alt",
+      "--oeko-surface-soft",
+      "--oeko-surface-tile",
+      "--oeko-surface-tileHover",
+      "--oeko-text",
+      "--oeko-text-onDark",
+      "--oeko-text-strong",
+      "--oeko-tracking-display"
+    ],
+    "tokenKinds": {
+      "--oeko-text-strong": "font",
+      "--oeko-text": "font",
+      "--oeko-text-onDark": "font",
+      "--oeko-surface": "color",
+      "--oeko-surface-soft": "color",
+      "--oeko-surface-tile": "color",
+      "--oeko-surface-tileHover": "color",
+      "--oeko-surface-alt": "color",
+      "--oeko-border": "color",
+      "--oeko-divider": "color",
+      "--oeko-blue": "color",
+      "--oeko-blue-soft": "color",
+      "--oeko-brand-1": "color",
+      "--oeko-brand-2": "color",
+      "--oeko-brand-3": "color",
+      "--oeko-brand-4": "color",
+      "--oeko-brand-5": "color",
+      "--oeko-brand-6": "color",
+      "--oeko-brand-7": "color",
+      "--oeko-brand-8": "color",
+      "--oeko-brand-gradient": "color",
+      "--oeko-blue-gradient": "color",
+      "--oeko-space-1": "spacing",
+      "--oeko-space-2": "spacing",
+      "--oeko-space-3": "spacing",
+      "--oeko-space-4": "spacing",
+      "--oeko-space-5": "spacing",
+      "--oeko-space-6": "spacing",
+      "--oeko-space-7": "spacing",
+      "--oeko-space-8": "spacing",
+      "--oeko-space-9": "spacing",
+      "--oeko-space-10": "spacing",
+      "--oeko-space-11": "spacing",
+      "--oeko-space-12": "spacing",
+      "--oeko-space-13": "spacing",
+      "--oeko-space-14": "spacing",
+      "--oeko-space-15": "spacing",
+      "--oeko-radius-sm": "radius",
+      "--oeko-radius-md": "radius",
+      "--oeko-radius-lg": "radius",
+      "--oeko-radius-xl": "radius",
+      "--oeko-shadow-soft": "shadow",
+      "--oeko-shadow-card": "shadow",
+      "--oeko-shadow-hover": "shadow",
+      "--oeko-font-sans": "font",
+      "--oeko-fw-light": "other",
+      "--oeko-fw-regular": "other",
+      "--oeko-fs-12": "spacing",
+      "--oeko-fs-14": "spacing",
+      "--oeko-fs-16": "spacing",
+      "--oeko-fs-18": "spacing",
+      "--oeko-fs-20": "spacing",
+      "--oeko-fs-24": "spacing",
+      "--oeko-fs-25": "spacing",
+      "--oeko-fs-30": "spacing",
+      "--oeko-fs-35": "spacing",
+      "--oeko-fs-36": "spacing",
+      "--oeko-fs-48": "spacing",
+      "--oeko-fs-60": "spacing",
+      "--oeko-fs-72": "spacing",
+      "--oeko-lh-tight": "other",
+      "--oeko-lh-snug": "other",
+      "--oeko-lh-body": "other",
+      "--oeko-lh-quote": "other",
+      "--oeko-tracking-display": "font",
+      "--oeko-ease": "other",
+      "--oeko-dur-fast": "other",
+      "--oeko-dur-base": "other",
+      "--oeko-dur-slow": "other"
+    },
+    "fontFamilies": [
+      "Mulish"
+    ]
+  }
+}

@@ -1,0 +1,228 @@
+/* OEKOBIT Design System — Tokens
+ * Source: Figma "Webseite OEKOBIT" Stylesets page
+ * Brand: OEKOBIT Deutschland (Biogasanlagen — biogas plant manufacturer)
+ */
+
+/* ─── Webfont ─────────────────────────────────────────────────── */
+/* Mulish — Light (300) and Regular (400) are the only weights in use */
+@import url("https://fonts.googleapis.com/css2?family=Mulish:wght@300;400;500;600;700&display=swap");
+
+:root {
+  /* ─── Color: Text ──────────────────────────────────────────── */
+  --oeko-text-strong: rgb(87, 97, 100);   /* Headlines, primary text                 */
+  --oeko-text:         rgb(121, 129, 131); /* Body text — by far the most-used color  */
+  --oeko-text-onDark:  rgb(255, 255, 255);
+
+  /* ─── Color: Surfaces ─────────────────────────────────────── */
+  --oeko-surface:        rgb(255, 255, 255); /* Page background (the canvas)         */
+  --oeko-surface-soft:   rgb(250, 250, 250); /* "Light" cards, hero panels           */
+  --oeko-surface-tile:   rgb(244, 245, 245); /* Default grey card / button bg        */
+  --oeko-surface-tileHover: rgb(240, 241, 241); /* Card / button hover               */
+  --oeko-surface-alt:    rgb(245, 245, 245);
+
+  /* ─── Color: Border ───────────────────────────────────────── */
+  --oeko-border:    rgb(221, 223, 224);
+  --oeko-divider:   rgb(87, 97, 100);
+
+  /* ─── Color: Accent (Blue family) ─────────────────────────── */
+  --oeko-blue:       rgb(100, 187, 224);  /* Primary blue accent (gradient buttons) */
+  --oeko-blue-soft:  rgb(204, 233, 245);  /* Blue gradient pair                     */
+
+  /* ─── Color: Brand Spectrum ──────────────────────────────────
+   * The signature gradient. Used on the Trennlinie (divider line),
+   * the logo leaf, and some text-on-image accents.
+   * Goes from yellow-green → green → teal → blue.
+   */
+  --oeko-brand-1: rgb(149, 193, 31);   /* #95C11F — yellow-green     */
+  --oeko-brand-2: rgb(90, 194, 77);    /* #5AC24D — green            */
+  --oeko-brand-3: rgb(0, 190, 116);    /* #00BE74 — emerald          */
+  --oeko-brand-4: rgb(0, 185, 151);    /* #00B997 — teal-green       */
+  --oeko-brand-5: rgb(0, 177, 179);    /* #00B1B3 — teal             */
+  --oeko-brand-6: rgb(0, 167, 198);    /* #00A7C6 — cyan             */
+  --oeko-brand-7: rgb(0, 155, 206);    /* #009BCE — sky              */
+  --oeko-brand-8: rgb(0, 142, 202);    /* #008ECA — blue             */
+
+  --oeko-brand-gradient: linear-gradient(
+    90deg,
+    var(--oeko-brand-1) 0%,
+    var(--oeko-brand-2) 14%,
+    var(--oeko-brand-3) 28%,
+    var(--oeko-brand-4) 41%,
+    var(--oeko-brand-5) 56%,
+    var(--oeko-brand-6) 70%,
+    var(--oeko-brand-7) 84%,
+    var(--oeko-brand-8) 100%
+  );
+
+  --oeko-blue-gradient: linear-gradient(
+    180deg,
+    var(--oeko-blue) 0%,
+    var(--oeko-blue-soft) 100%
+  );
+
+  /* ─── Spacing (16-base, multiples of 4/8) ─────────────────── */
+  --oeko-space-1:   4px;
+  --oeko-space-2:   8px;
+  --oeko-space-3:  12px;
+  --oeko-space-4:  16px;
+  --oeko-space-5:  24px;
+  --oeko-space-6:  32px;
+  --oeko-space-7:  48px;
+  --oeko-space-8:  64px;
+  --oeko-space-9:  96px;
+  --oeko-space-10: 128px;
+  --oeko-space-11: 160px;
+  --oeko-space-12: 192px;
+  --oeko-space-13: 256px;
+  --oeko-space-14: 384px;
+  --oeko-space-15: 512px;
+
+  /* ─── Radii ───────────────────────────────────────────────── */
+  --oeko-radius-sm:  8px;   /* small chips                          */
+  --oeko-radius-md: 12px;   /* cards, buttons, infoboxes (default)   */
+  --oeko-radius-lg: 18px;   /* hero / section background panels     */
+  --oeko-radius-xl: 25px;   /* outer content frame                  */
+
+  /* ─── Shadows / elevation ─────────────────────────────────── */
+  /* The system is almost flat — uses surface tinting for depth instead of shadows. */
+  --oeko-shadow-soft:   0 1px 2px rgba(0, 0, 0, 0.04);
+  --oeko-shadow-card:   0 4px 14px rgba(0, 0, 0, 0.06);
+  --oeko-shadow-hover:  0 8px 24px rgba(0, 0, 0, 0.08);
+
+  /* ─── Type ────────────────────────────────────────────────── */
+  --oeko-font-sans: "Mulish", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --oeko-fw-light:    300;
+  --oeko-fw-regular:  400;
+
+  /* Type scale (figma stylesheet "Font Size") */
+  --oeko-fs-12: 12px;
+  --oeko-fs-14: 14px;
+  --oeko-fs-16: 16px;   /* small body                  */
+  --oeko-fs-18: 18px;   /* default body — most common  */
+  --oeko-fs-20: 20px;   /* light h-eyebrow             */
+  --oeko-fs-24: 24px;
+  --oeko-fs-25: 25px;   /* zitat (pull-quote)          */
+  --oeko-fs-30: 30px;   /* h2 — section headline       */
+  --oeko-fs-35: 35px;   /* h1 — page headline          */
+  --oeko-fs-36: 36px;
+  --oeko-fs-48: 48px;
+  --oeko-fs-60: 60px;
+  --oeko-fs-72: 72px;
+
+  /* Line heights — body is loose (1.8). Headlines hug their cap height. */
+  --oeko-lh-tight:   1;
+  --oeko-lh-snug:    1.125;     /* 18 → 20.25, used as 18/18 on titles too */
+  --oeko-lh-body:    1.8;       /* 18 → 32.4px (the figma default)         */
+  --oeko-lh-quote:   1.0;
+
+  /* Letter spacing — large display text uses a slight negative track */
+  --oeko-tracking-display: -0.01em;
+
+  /* ─── Motion ──────────────────────────────────────────────── */
+  --oeko-ease:     cubic-bezier(0.4, 0.0, 0.2, 1);
+  --oeko-dur-fast: 120ms;
+  --oeko-dur-base: 200ms;
+  --oeko-dur-slow: 320ms;
+}
+
+/* ─── Semantic helpers ────────────────────────────────────── */
+
+html {
+  font-family: var(--oeko-font-sans);
+  color: var(--oeko-text);
+  background: var(--oeko-surface);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: var(--oeko-font-sans);
+  font-size: var(--oeko-fs-18);
+  font-weight: var(--oeko-fw-regular);
+  line-height: var(--oeko-lh-body);
+  color: var(--oeko-text);
+  margin: 0;
+}
+
+.oeko-h1, h1 {
+  font-family: var(--oeko-font-sans);
+  font-weight: var(--oeko-fw-light);
+  font-size: var(--oeko-fs-35);
+  line-height: var(--oeko-lh-tight);
+  color: var(--oeko-text-strong);
+  letter-spacing: 0;
+  margin: 0;
+}
+
+.oeko-h2, h2 {
+  font-family: var(--oeko-font-sans);
+  font-weight: var(--oeko-fw-regular);
+  font-size: var(--oeko-fs-30);
+  line-height: var(--oeko-lh-tight);
+  letter-spacing: var(--oeko-tracking-display);
+  color: var(--oeko-text-strong);
+  margin: 0;
+}
+
+.oeko-h3, h3 {
+  font-family: var(--oeko-font-sans);
+  font-weight: var(--oeko-fw-light);
+  font-size: var(--oeko-fs-25);
+  line-height: var(--oeko-lh-tight);
+  color: var(--oeko-text-strong);
+  margin: 0;
+}
+
+.oeko-eyebrow {
+  font-family: var(--oeko-font-sans);
+  font-weight: var(--oeko-fw-light);
+  font-size: var(--oeko-fs-20);
+  line-height: var(--oeko-lh-tight);
+  color: var(--oeko-text);
+}
+
+.oeko-body, p {
+  font-family: var(--oeko-font-sans);
+  font-weight: var(--oeko-fw-regular);
+  font-size: var(--oeko-fs-18);
+  line-height: var(--oeko-lh-body);
+  color: var(--oeko-text);
+  margin: 0;
+}
+
+.oeko-body-sm {
+  font-size: var(--oeko-fs-16);
+  line-height: 1.5;
+  color: var(--oeko-text);
+}
+
+.oeko-quote {
+  font-family: var(--oeko-font-sans);
+  font-weight: var(--oeko-fw-light);
+  font-size: var(--oeko-fs-25);
+  line-height: var(--oeko-lh-tight);
+  letter-spacing: var(--oeko-tracking-display);
+  color: var(--oeko-text);
+}
+
+.oeko-display {
+  font-family: var(--oeko-font-sans);
+  font-weight: var(--oeko-fw-light);
+  font-size: var(--oeko-fs-48);
+  line-height: 1.05;
+  letter-spacing: var(--oeko-tracking-display);
+  color: var(--oeko-text-strong);
+}
+
+/* ─── Trennlinie — the signature divider ─────────────────── */
+.oeko-trennlinie {
+  display: block;
+  width: 200px;
+  height: 1px;
+  background: var(--oeko-brand-gradient);
+  border: 0;
+}
+.oeko-trennlinie--full {
+  width: 100%;
+}

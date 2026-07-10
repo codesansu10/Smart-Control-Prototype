@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<template id="__bundler_thumbnail" data-bg-color="#F6F8F9">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <rect width="1200" height="800" fill="#F6F8F9"/>
+    <g transform="translate(600 340)">
+      <path d="M-46 90 C-90 40 -70 -30 -20 -70 C-30 -20 20 -30 12 -86 C60 -50 80 20 40 78 C58 40 30 6 18 24 C34 60 6 96 -46 90 Z" fill="#E8792B"/>
+    </g>
+    <text x="600" y="500" font-family="'Mulish',system-ui,sans-serif" font-size="52" font-weight="700" letter-spacing="4" fill="#576164" text-anchor="middle">SMARTCONTROL</text>
+    <text x="600" y="552" font-family="'Mulish',system-ui,sans-serif" font-size="26" font-weight="600" letter-spacing="2" fill="#A4ABAC" text-anchor="middle">2.0</text>
+  </svg>
+</template>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/oekobit-design-system-6b83f06d-a798-4253-b128-80ea77c52fd0/colors_and_type.css">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+a{color:#38A4D4;text-decoration:none}a:hover{color:#2C87B4}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#DCE0E1;border-radius:10px;border:3px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-track{background:transparent}
+@keyframes cpIn{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes cpPulse{0%,100%{box-shadow:0 8px 22px rgba(0,142,202,.3)}50%{box-shadow:0 8px 30px rgba(0,142,202,.55)}}
+@keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
+</style>
+</helmet>
+<div style="display:flex;height:100vh;width:100%;background:#F6F8F9;font-family:'Mulish',system-ui,sans-serif;color:#798183;overflow:hidden">
+
+  <!-- ═══════════ SIDEBAR ═══════════ -->
+  <aside style="width:244px;flex:none;background:#fff;border-right:1px solid #E6E9EA;display:flex;flex-direction:column;padding:22px 14px">
+    <div style="display:flex;align-items:center;gap:10px;margin:-22px -14px 0;padding:0 20px;border-bottom:1px solid #E6E9EA;height:83px;box-sizing:border-box">
+      <img src="assets/oekobit-flame.svg" alt="OEKOBIT" style="height:30px;width:auto;flex:none"/>
+      <div style="line-height:1.15">
+        <div style="font-size:15px;font-weight:700;letter-spacing:.04em;color:#576164">SMARTCONTROL</div>
+        <div style="font-size:11px;color:#A4ABAC;letter-spacing:.02em">by OEKOBIT</div>
+      </div>
+    </div>
+
+    <div style="font-size:10.5px;font-weight:600;letter-spacing:.1em;color:#B7BDBE;padding:0 10px 10px;margin-top:24px">MODULES</div>
+
+    <!-- Fleet nav (operator only) -->
+    <sc-if value="{{ navShowFleet }}" hint-placeholder-val="{{ true }}">
+      <nav style="display:flex;flex-direction:column;gap:4px">
+        <button onClick="{{ goFOverview }}" style="{{ navFOverview }}">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+          <span style="flex:1;text-align:left;font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Fleet Dashboard</span>
+        </button>
+        <button onClick="{{ goFAnomaly }}" style="{{ navFAnomaly }}">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 13h3l2.5-7 4 15 3-11 2 4h3.5"/></svg>
+          <span style="flex:1;text-align:left;font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Anomaly Detection</span>
+          <sc-if value="{{ showFleetAnomBadge }}" hint-placeholder-val="{{ true }}"><span style="font-size:10.5px;font-weight:700;color:#C6841A;background:#FBEFD6;border-radius:20px;padding:2px 7px">{{ fleetAnomBadge }}</span></sc-if>
+        </button>
+        <button onClick="{{ goFReport }}" style="{{ navFReport }}">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
+          <span style="flex:1;text-align:left;font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Monthly Report</span>
+        </button>
+        <button onClick="{{ goFCustomer }}" style="{{ navFCustomer }}">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 10h8M8 13h5"/></svg>
+          <span style="flex:1;text-align:left;font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Messages</span>
+          <sc-if value="{{ showCustBadge }}" hint-placeholder-val="{{ false }}"><span style="font-size:10.5px;font-weight:700;color:#2C87B4;background:#E4F1FA;border-radius:20px;padding:2px 7px">{{ custBadge }}</span></sc-if>
+        </button>
+      </nav>
+    </sc-if>
+
+    <!-- Expert nav (Bernd) -->
+    <sc-if value="{{ expertNav }}" hint-placeholder-val="{{ false }}">
+      <nav style="display:flex;flex-direction:column;gap:4px">
+        <button onClick="{{ goExpertMessages }}" style="{{ navExpertMsg }}">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 10h8M8 13h5"/></svg>
+          <span style="flex:1;text-align:left;font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Messages</span>
+          <sc-if value="{{ showCustBadge }}" hint-placeholder-val="{{ false }}"><span style="font-size:10.5px;font-weight:700;color:#2C87B4;background:#E4F1FA;border-radius:20px;padding:2px 7px">{{ custBadge }}</span></sc-if>
+        </button>
+      </nav>
+    </sc-if>
+    <sc-if value="{{ navShowPlant }}" hint-placeholder-val="{{ false }}">
+      <nav style="display:flex;flex-direction:column;gap:4px">
+        <button onClick="{{ goPDash }}" style="{{ navPDash }}">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+          <span style="flex:1;text-align:left;font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Dashboard</span>
+        </button>
+        <button onClick="{{ goPAnomaly }}" style="{{ navPAnomaly }}">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 13h3l2.5-7 4 15 3-11 2 4h3.5"/></svg>
+          <span style="flex:1;text-align:left;font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Anomaly Detection</span>
+          <sc-if value="{{ showPAnomBadge }}" hint-placeholder-val="{{ false }}"><span style="font-size:10.5px;font-weight:700;color:#C6841A;background:#FBEFD6;border-radius:20px;padding:2px 7px">{{ pAnomBadge }}</span></sc-if>
+        </button>
+        <button onClick="{{ goPCustomer }}" style="{{ navPCustomer }}">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 10h8M8 13h5"/></svg>
+          <span style="flex:1;text-align:left;font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Messages</span>
+          <sc-if value="{{ showCustBadge }}" hint-placeholder-val="{{ false }}"><span style="font-size:10.5px;font-weight:700;color:#2C87B4;background:#E4F1FA;border-radius:20px;padding:2px 7px">{{ custBadge }}</span></sc-if>
+        </button>
+      </nav>
+    </sc-if>
+
+    <div style="flex:1"></div>
+    <div style="border-top:1px solid #EDEFF0;padding-top:14px;position:relative">
+      <sc-if value="{{ userMenuOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;bottom:56px;left:0;right:0;background:#fff;border:1px solid #E6E9EA;border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,.16);padding:14px;z-index:30">
+          <div style="font-size:10px;font-weight:600;letter-spacing:.08em;color:#B7BDBE;margin-bottom:8px">SWITCH USER</div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+            <button onClick="{{ switchToJulia }}" style="{{ uJuliaRow }}">
+              <span style="{{ uJuliaAv }}">JU</span>
+              <span style="flex:1;line-height:1.25;text-align:left"><span style="font-size:12.5px;font-weight:600;color:#576164;display:block">Julia User</span><span style="font-size:10.5px;color:#A4ABAC">Operator · Scheer Energy</span></span>
+              <sc-if value="{{ juliaActive }}" hint-placeholder-val="{{ true }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2C87B4" stroke-width="2.4"><path d="M20 6L9 17l-5-5"/></svg></sc-if>
+            </button>
+            <button onClick="{{ switchToBernd }}" style="{{ uBerndRow }}">
+              <span style="{{ uBerndAv }}">BB</span>
+              <span style="flex:1;line-height:1.25;text-align:left"><span style="font-size:12.5px;font-weight:600;color:#576164;display:block">Bernd Biogas</span><span style="font-size:10.5px;color:#A4ABAC">Process Expert · OEKOBIT</span></span>
+              <sc-if value="{{ berndActive }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C6841A" stroke-width="2.4"><path d="M20 6L9 17l-5-5"/></svg></sc-if>
+            </button>
+          </div>
+          <div style="font-size:10px;font-weight:600;letter-spacing:.08em;color:#B7BDBE;margin-bottom:8px">DETAIL LEVEL</div>
+          <div style="display:flex;background:#F0F1F1;border-radius:11px;padding:4px;margin-bottom:8px">
+            <button onClick="{{ setBasic }}" style="{{ segBasic }};flex:1">Basic</button>
+            <button onClick="{{ setAdv }}" style="{{ segAdv }};flex:1">Advanced</button>
+          </div>
+          <button style="width:100%;text-align:left;border:0;background:transparent;font:inherit;font-size:13px;color:#798183;padding:9px 8px;cursor:pointer;border-radius:8px" style-hover="background:#F4F5F5">Sign out</button>
+        </div>
+      </sc-if>
+      <button onClick="{{ toggleUserMenu }}" style="display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;cursor:pointer;font:inherit;padding:4px;border-radius:10px" style-hover="background:#F7F8F8">
+        <span style="width:34px;height:34px;border-radius:50%;background:#F0F1F1;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#798183;flex:none">{{ activeUserInitials }}</span>
+        <span style="line-height:1.2;flex:1;text-align:left"><span style="font-size:13px;font-weight:600;color:#576164;display:block">{{ activeUserName }}</span><span style="font-size:11px;color:#A4ABAC">{{ activeUserRole }}</span></span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B7BDBE" stroke-width="1.8"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ═══════════ MAIN ═══════════ -->
+  <main style="flex:1;display:flex;flex-direction:column;min-width:0">
+    <header style="flex:none;background:#fff;border-bottom:1px solid #E6E9EA;padding:18px 28px;display:flex;align-items:center;gap:18px">
+      <div style="display:flex;gap:7px;flex:none;align-items:center">
+        <button onClick="{{ goHome }}" title="Fleet home" style="width:34px;height:34px;border-radius:9px;border:1px solid #E6E9EA;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#798183;padding:0" style-hover="background:#F7F8F8;color:#576164"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg></button>
+        <span style="width:1px;height:22px;background:#E6E9EA;margin:0 2px"></span>
+        <button onClick="{{ goBack }}" style="{{ backStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M15 6l-6 6 6 6"/></svg></button>
+        <button onClick="{{ goForward }}" style="{{ forwardStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M9 6l6 6-6 6"/></svg></button>
+      </div>
+      <div style="min-width:0;flex:1">
+        <h1 style="font-size:22px;font-weight:600;color:#576164;margin:0;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ title }}</h1>
+        <div style="font-size:13px;color:#9AA1A3;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ subtitle }}</div>
+      </div>
+      <div style="text-align:right;border-left:1px solid #EDEFF0;padding-left:24px;line-height:1.25">
+        <div style="font-size:14px;font-weight:700;color:#576164;white-space:nowrap">{{ plantName }}</div>
+        <div style="font-size:12px;color:#A4ABAC;margin-top:1px">{{ timeStr }}</div>
+      </div>
+    </header>
+
+    <div style="flex:1;overflow-y:auto;padding:28px 32px">
+
+      <!-- ═══ FLEET · OVERVIEW ═══ -->
+      <sc-if value="{{ vFleetOverview }}" hint-placeholder-val="{{ true }}">
+      <div data-screen-label="Fleet Dashboard" style="display:flex;flex-direction:column;gap:20px;max-width:1280px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px">
+          <sc-for list="{{ fleetKpis }}" as="k" hint-placeholder-count="3">
+            <div style="background:#fff;border:1px solid #ECEEEF;border-radius:16px;padding:19px 20px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+              <div style="font-size:12.5px;color:#9AA1A3;margin-bottom:9px">{{ k.label }}</div>
+              <div style="font-size:29px;font-weight:300;line-height:1;color:{{ k.color }}">{{ k.value }}</div>
+              <div style="font-size:11.5px;color:#B2B8B9;margin-top:7px">{{ k.hint }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="background:#fff;border:1px solid #ECEEEF;border-radius:18px;padding:26px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px">
+            <h2 style="font-size:19px;font-weight:600;color:#576164;margin:0">Plants in the fleet</h2>
+            <span style="font-size:12.5px;color:#A4ABAC">Click a plant to enter its level</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <sc-for list="{{ plants }}" as="p" hint-placeholder-count="5">
+              <button onClick="{{ p.onClick }}" style="display:flex;align-items:center;gap:16px;width:100%;text-align:left;border:1px solid #EEF0F1;background:#FCFCFC;border-radius:12px;padding:15px 18px;cursor:pointer;font:inherit;transition:background .15s" style-hover="background:#F4F7F7;border-color:#E2E5E6">
+                <span style="width:9px;height:9px;border-radius:50%;flex:none;background:{{ p.dot }}"></span>
+                <span style="flex:1;min-width:0"><span style="font-size:14.5px;font-weight:600;color:#576164;display:block">{{ p.name }}</span><span style="font-size:12px;color:#A4ABAC">{{ p.loc }}</span></span>
+                <sc-if value="{{ advanced }}" hint-placeholder-val="{{ true }}">
+                  <span style="display:flex;gap:26px">
+                    <span style="text-align:right"><span style="font-size:10.5px;color:#B7BDBE;display:block">Methane</span><span style="font-size:13.5px;color:#798183">{{ p.methane }}</span></span>
+                    <span style="text-align:right"><span style="font-size:10.5px;color:#B7BDBE;display:block">H₂S</span><span style="font-size:13.5px;color:#798183">{{ p.h2s }}</span></span>
+                    <span style="text-align:right"><span style="font-size:10.5px;color:#B7BDBE;display:block">Gas flow</span><span style="font-size:13.5px;color:#798183">{{ p.gas }}</span></span>
+                  </span>
+                </sc-if>
+                <span style="font-size:12.5px;color:#9AA1A3;width:70px;text-align:right">{{ p.alertsLabel }}</span>
+                <span style="{{ p.chipStyle }}">{{ p.chipLabel }}</span>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#C2C8C9" stroke-width="1.8"><path d="M9 6l6 6-6 6"/></svg>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ═══ FLEET · ANOMALY ═══ -->
+      <sc-if value="{{ vFleetAnomaly }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Fleet Anomaly" style="display:flex;flex-direction:column;gap:20px;max-width:1280px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#B7BDBE;margin-right:4px">FILTER</span>
+          <sc-for list="{{ anomFilterChips }}" as="c" hint-placeholder-count="3"><button onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.text }}</button></sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+          <sc-for list="{{ anomSummary }}" as="k" hint-placeholder-count="3">
+            <div style="background:#fff;border:1px solid #ECEEEF;border-radius:16px;padding:19px 20px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+              <div style="font-size:12.5px;color:#9AA1A3;margin-bottom:9px">{{ k.label }}</div>
+              <div style="font-size:29px;font-weight:300;line-height:1;color:{{ k.color }}">{{ k.value }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="background:#fff;border:1px solid #ECEEEF;border-radius:18px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+          <h2 style="font-size:18px;font-weight:600;color:#576164;margin:0 0 16px">Active alerts by plant</h2>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <sc-if value="{{ anomListEmpty }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:14px;border:1px solid #DCEEE3;background:#F3FAF5;border-radius:12px;padding:18px 20px">
+                <span style="width:38px;height:38px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;flex:none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1E9E63" stroke-width="1.8"><path d="M20 6L9 17l-5-5"/></svg></span>
+                <span><span style="font-size:14.5px;font-weight:600;color:#576164;display:block">No active anomalies</span><span style="font-size:12.5px;color:#8B9294">All plants are operating within normal ranges.</span></span>
+              </div>
+            </sc-if>
+            <sc-for list="{{ anomalyRows }}" as="r" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:16px;border:1px solid {{ r.border }};background:{{ r.bg }};border-radius:12px;padding:15px 18px">
+                <span style="width:9px;height:9px;border-radius:50%;flex:none;background:{{ r.dot }}"></span>
+                <span style="flex:1;min-width:0"><span style="font-size:14.5px;font-weight:600;color:#576164;display:block">{{ r.name }}</span><span style="font-size:12px;color:#A4ABAC">{{ r.detail }}</span></span>
+                <sc-if value="{{ r.hasOutcome }}" hint-placeholder-val="{{ false }}"><span style="{{ r.outcomeStyle }}">{{ r.outcomeLabel }}</span></sc-if>
+                <span style="{{ r.chipStyle }}">{{ r.chipLabel }}</span>
+                <sc-if value="{{ r.hasAlert }}" hint-placeholder-val="{{ true }}"><button onClick="{{ r.onView }}" style="border:0;background:transparent;color:#8A6A28;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;padding:4px 2px" style-hover="color:#5F4915">View alerts<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M9 6l6 6-6 6"/></svg></button></sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ═══ FLEET · REPORT ═══ -->
+      <sc-if value="{{ vFleetReport }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Monthly Report" style="display:flex;flex-direction:column;gap:20px;max-width:1280px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#B7BDBE;margin-right:4px">REPORT SCOPE</span>
+          <sc-for list="{{ reportScopeChips }}" as="c" hint-placeholder-count="3"><button onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.text }}</button></sc-for>
+        </div>
+        <div style="background:#fff;border:1px solid #ECEEEF;border-radius:18px;padding:24px 26px;box-shadow:0 1px 3px rgba(0,0,0,.04);display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+          <div style="flex:1;min-width:280px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><h2 style="font-size:20px;font-weight:600;color:#576164;margin:0">{{ reportTitle }}</h2><span style="font-size:11px;font-weight:600;color:#C6841A;background:#FBEFD6;border-radius:20px;padding:4px 12px">DRAFT READY</span></div>
+            <p style="font-size:13.5px;color:#A4ABAC;margin:0">{{ reportScopeLabel }} · generated from OEKOBIT-reviewed data · awaiting expert approval</p>
+          </div>
+          <div style="display:flex;gap:10px">
+            <button onClick="{{ reportEdit }}" style="border:1px solid #E2E5E6;background:#fff;border-radius:10px;padding:11px 18px;font:inherit;font-size:13px;font-weight:600;color:#798183;cursor:pointer">Edit draft</button>
+            <button onClick="{{ reportApprove }}" style="border:0;background:#1E9E63;color:#fff;border-radius:10px;padding:11px 18px;font:inherit;font-size:13px;font-weight:600;cursor:pointer">Approve & send</button>
+          </div>
+        </div>
+        <sc-if value="{{ hasReportNote }}" hint-placeholder-val="{{ false }}"><div style="background:#E4F4EA;border:1px solid #CBE9D6;border-radius:12px;padding:13px 16px;font-size:13px;color:#1E7A4C">{{ reportNote }}</div></sc-if>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
+          <sc-for list="{{ reportKpis }}" as="k" hint-placeholder-count="4">
+            <div style="background:#fff;border:1px solid #ECEEEF;border-radius:16px;padding:19px 20px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+              <div style="font-size:12.5px;color:#9AA1A3;margin-bottom:9px">{{ k.label }}</div>
+              <div style="font-size:26px;font-weight:300;line-height:1;color:#576164">{{ k.value }}</div>
+              <div style="font-size:11.5px;color:#B2B8B9;margin-top:6px">{{ k.hint }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+          <sc-for list="{{ reportSections }}" as="s" hint-placeholder-count="3">
+            <div style="background:#fff;border:1px solid #ECEEEF;border-radius:18px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><h3 style="font-size:16px;font-weight:600;color:#576164;margin:0">{{ s.title }}</h3><span style="{{ s.chipStyle }}">{{ s.chipLabel }}</span></div>
+              <p style="font-size:13px;line-height:1.6;color:#98A0A1;margin:0">{{ s.body }}</p>
+            </div>
+          </sc-for>
+        </div>
+        <sc-if value="{{ advanced }}" hint-placeholder-val="{{ true }}">
+          <div style="background:#fff;border:1px solid #ECEEEF;border-radius:18px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+            <h3 style="font-size:16px;font-weight:600;color:#576164;margin:0 0 14px">Process metrics — monthly statistics</h3>
+            <div style="display:grid;grid-template-columns:1.4fr repeat(4,1fr);gap:8px;font-size:12.5px">
+              <div style="font-weight:700;color:#B7BDBE;font-size:10.5px;letter-spacing:.06em">VARIABLE</div><div style="font-weight:700;color:#B7BDBE;font-size:10.5px;text-align:right">MIN</div><div style="font-weight:700;color:#B7BDBE;font-size:10.5px;text-align:right">AVG</div><div style="font-weight:700;color:#B7BDBE;font-size:10.5px;text-align:right">MAX</div><div style="font-weight:700;color:#B7BDBE;font-size:10.5px;text-align:right">UNIT</div>
+              <sc-for list="{{ reportStats }}" as="r" hint-placeholder-count="6">
+                <div style="color:#798183;font-family:ui-monospace,Menlo,monospace;border-top:1px solid #F4F5F5;padding:8px 0">{{ r.name }}</div><div style="color:#576164;text-align:right;border-top:1px solid #F4F5F5;padding:8px 0">{{ r.min }}</div><div style="color:#576164;text-align:right;border-top:1px solid #F4F5F5;padding:8px 0">{{ r.avg }}</div><div style="color:#576164;text-align:right;border-top:1px solid #F4F5F5;padding:8px 0">{{ r.max }}</div><div style="color:#A4ABAC;text-align:right;border-top:1px solid #F4F5F5;padding:8px 0">{{ r.unit }}</div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+      </sc-if>
+
+      <!-- ═══ CUSTOMER (fleet filtered OR plant) ═══ -->
+      <sc-if value="{{ vCustomer }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Messages" style="display:flex;flex-direction:column;gap:12px;max-width:820px;width:100%;margin:0 auto">
+
+        <!-- INBOX -->
+        <sc-if value="{{ showInbox }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+            <span style="font-size:13px;color:#A4ABAC;font-weight:600">{{ inboxCountLabel }}</span>
+            <sc-if value="{{ canCompose }}" hint-placeholder-val="{{ true }}"><button onClick="{{ openCompose }}" style="display:flex;align-items:center;gap:7px;border:0;background:#2C87B4;color:#fff;border-radius:10px;padding:9px 15px;font:inherit;font-size:13px;font-weight:600;cursor:pointer" style-hover="background:#246F94"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>New message</button></sc-if>
+          </div>
+          <sc-if value="{{ inboxEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="background:#fff;border:1px solid #ECEEEF;border-radius:18px;padding:56px 24px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+              <span style="width:52px;height:52px;border-radius:14px;background:#EEF3F5;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#9FB6BF" stroke-width="1.6"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 10h8M8 13h5"/></svg></span>
+              <div style="font-size:15px;font-weight:600;color:#798183;margin-bottom:6px">{{ inboxEmptyTitle }}</div>
+              <div style="font-size:13px;color:#A4ABAC;line-height:1.55;max-width:360px;margin:0 auto 18px">{{ inboxEmptySub }}</div>
+              <sc-if value="{{ inboxEmptyCanCompose }}" hint-placeholder-val="{{ true }}"><button onClick="{{ openCompose }}" style="display:inline-flex;align-items:center;gap:7px;border:0;background:#2C87B4;color:#fff;border-radius:10px;padding:10px 18px;font:inherit;font-size:13.5px;font-weight:600;cursor:pointer" style-hover="background:#246F94"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>New message</button></sc-if>
+            </div>
+          </sc-if>
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <sc-for list="{{ inboxList }}" as="c" hint-placeholder-count="4">
+              <button onClick="{{ c.onOpen }}" style="{{ c.rowStyle }}" style-hover="border-color:#B9DDEF">
+                <span style="{{ c.avStyle }}">{{ c.avInit }}</span>
+                <span style="flex:1;min-width:0">
+                  <span style="display:flex;align-items:center;gap:9px"><span style="font-size:14.5px;font-weight:600;color:#576164">{{ c.name }}</span><sc-if value="{{ c.hasStatus }}" hint-placeholder-val="{{ false }}"><span style="{{ c.statusChipStyle }}">{{ c.statusLabel }}</span></sc-if></span>
+                  <span style="font-size:11.5px;color:#A4ABAC;display:block;margin-top:2px">{{ c.subName }}</span>
+                  <span style="font-size:12.5px;color:{{ c.previewColor }};display:block;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:560px">{{ c.preview }}</span>
+                </span>
+                <span style="display:flex;flex-direction:column;align-items:flex-end;gap:7px;flex:none">
+                  <span style="font-size:11px;color:#B7BDBE">{{ c.time }}</span>
+                  <sc-if value="{{ c.showUnread }}" hint-placeholder-val="{{ false }}"><span style="{{ c.unreadStyle }}">{{ c.unread }}</span></sc-if>
+                </span>
+              </button>
+            </sc-for>
+          </div>
+          <sc-if value="{{ composeOpen }}" hint-placeholder-val="{{ false }}">
+            <div onClick="{{ closeCompose }}" style="position:fixed;inset:0;background:rgba(30,40,44,.35);display:flex;align-items:center;justify-content:center;z-index:60;padding:24px">
+              <div onClick="{{ stopProp }}" style="background:#fff;border-radius:18px;width:440px;max-width:100%;max-height:80vh;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.25);display:flex;flex-direction:column">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid #EEF0F1">
+                  <div style="font-size:15.5px;font-weight:600;color:#576164">New message</div>
+                  <button onClick="{{ closeCompose }}" style="border:0;background:#F4F5F5;width:30px;height:30px;border-radius:8px;cursor:pointer;color:#798183;display:flex;align-items:center;justify-content:center" style-hover="background:#EBEDED"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+                </div>
+                <div style="padding:18px 20px 4px;overflow-y:auto">
+                  <div style="font-size:11px;font-weight:700;letter-spacing:.05em;color:#8B9294;margin-bottom:7px">SUBJECT</div>
+                  <input value="{{ composeSubject }}" onInput="{{ onComposeSubject }}" placeholder="What is this about?" style="width:100%;box-sizing:border-box;border:1px solid #E1E4E5;border-radius:10px;padding:11px 13px;font:inherit;font-size:14px;color:#576164;outline:none" style-focus="border-color:#B9DDEF" />
+                  <div style="font-size:11px;font-weight:700;letter-spacing:.05em;color:#8B9294;margin:18px 0 9px">SUGGESTED TOPICS</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:8px">
+                    <sc-for list="{{ composeTopics }}" as="t" hint-placeholder-count="5">
+                      <button onClick="{{ t.onPick }}" style="{{ t.style }}">{{ t.text }}</button>
+                    </sc-for>
+                  </div>
+                  <div style="font-size:11px;font-weight:700;letter-spacing:.05em;color:#8B9294;margin:20px 0 9px">RELATES TO</div>
+                  <div style="display:flex;flex-direction:column;gap:7px">
+                    <sc-for list="{{ composeTargets }}" as="p" hint-placeholder-count="4">
+                      <button onClick="{{ p.onPick }}" style="{{ p.rowStyle }}">
+                        <span style="{{ p.avStyle }}">{{ p.avInit }}</span>
+                        <span style="flex:1;min-width:0"><span style="font-size:13.5px;font-weight:600;color:#576164;display:block">{{ p.name }}</span><span style="font-size:11.5px;color:#A4ABAC;display:block;margin-top:1px">{{ p.sub }}</span></span>
+                        <span style="{{ p.dotStyle }}"><sc-if value="{{ p.dot }}" hint-placeholder-val="{{ false }}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></sc-if></span>
+                      </button>
+                    </sc-for>
+                  </div>
+                </div>
+                <div style="padding:14px 20px;border-top:1px solid #EEF0F1;display:flex;justify-content:flex-end;gap:10px">
+                  <button onClick="{{ closeCompose }}" style="border:1px solid #E2E5E6;background:#fff;color:#798183;border-radius:10px;padding:10px 18px;font:inherit;font-size:13px;font-weight:600;cursor:pointer" style-hover="background:#F7F8F8">Cancel</button>
+                  <button onClick="{{ startCompose }}" disabled="{{ startDisabled }}" style="{{ startBtnStyle }}">Start conversation</button>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+        </sc-if>
+
+        <!-- THREAD -->
+        <sc-if value="{{ showThread }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#fff;border:1px solid #ECEEEF;border-radius:18px;box-shadow:0 1px 3px rgba(0,0,0,.04);display:flex;flex-direction:column;height:calc(100vh - 140px);min-height:520px;overflow:hidden">
+          <div style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid #EEF0F1">
+            <sc-if value="{{ showInboxBack }}" hint-placeholder-val="{{ true }}"><button onClick="{{ backToInbox }}" style="border:0;background:#F4F5F5;width:32px;height:32px;border-radius:9px;cursor:pointer;color:#798183;display:flex;align-items:center;justify-content:center;flex:none" style-hover="background:#EBEDED"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M15 6l-6 6 6 6"/></svg></button></sc-if>
+            <span style="width:38px;height:38px;border-radius:50%;background:{{ caseAvBg }};color:#fff;display:flex;align-items:center;justify-content:center;font-size:13.5px;font-weight:700;flex:none">{{ caseAvInit }}</span>
+            <div style="flex:1;min-width:0;line-height:1.3">
+              <div style="font-size:15px;font-weight:600;color:#576164">{{ threadTitle }}</div>
+              <div style="font-size:12px;color:#A4ABAC">{{ threadSub }}</div>
+            </div>
+            <span style="{{ caseStatusStyle }}">{{ caseStatusLabel }}</span>
+            <sc-if value="{{ showClose }}" hint-placeholder-val="{{ false }}"><button onClick="{{ closeCase }}" style="border:1px solid #E2E5E6;background:#fff;color:#798183;border-radius:9px;padding:8px 14px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer" style-hover="background:#F7F8F8">Close case</button></sc-if>
+          </div>
+
+          <div style="flex:1;overflow-y:auto;padding:22px 20px;display:flex;flex-direction:column;gap:16px;background:#FBFCFC">
+            <sc-if value="{{ threadEmpty }}" hint-placeholder-val="{{ true }}">
+              <div style="margin:auto;text-align:center;max-width:340px;padding:40px 0">
+                <span style="width:52px;height:52px;border-radius:14px;background:#EEF3F5;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#9FB6BF" stroke-width="1.6"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 10h8M8 13h5"/></svg></span>
+                <div style="font-size:15px;font-weight:600;color:#798183;margin-bottom:6px">{{ emptyTitle }}</div>
+                <div style="font-size:13px;color:#A4ABAC;line-height:1.55">{{ emptySub }}</div>
+              </div>
+            </sc-if>
+
+            <sc-for list="{{ threadMsgs }}" as="m" hint-placeholder-count="0">
+              <div style="{{ m.rowStyle }}">
+                <sc-if value="{{ m.showAv }}" hint-placeholder-val="{{ false }}"><span style="{{ m.avStyle }}">{{ m.initials }}</span></sc-if>
+                <div style="display:flex;flex-direction:column;gap:4px;max-width:82%;align-items:{{ m.align }}">
+                  <sc-if value="{{ m.isText }}" hint-placeholder-val="{{ false }}"><div style="{{ m.bubbleStyle }}">{{ m.text }}</div></sc-if>
+                  <sc-if value="{{ m.isFile }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ m.fileBubbleStyle }}">
+                      <span style="width:34px;height:34px;border-radius:9px;background:{{ m.fileIconBg }};display:flex;align-items:center;justify-content:center;flex:none"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="{{ m.fileIconColor }}" stroke-width="1.7"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></span>
+                      <span style="min-width:0"><span style="font-size:13px;font-weight:600;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.fileName }}</span><span style="font-size:11px;opacity:.75;display:block;margin-top:1px">{{ m.fileSize }}</span></span>
+                    </div>
+                  </sc-if>
+
+                  <sc-if value="{{ m.isReport }}" hint-placeholder-val="{{ false }}">
+                    <button onClick="{{ m.onOpen }}" style="text-align:left;border:1px solid #E1E9EC;background:#fff;border-radius:14px;padding:0;overflow:hidden;cursor:pointer;font:inherit;width:340px;max-width:100%" style-hover="border-color:#B9DDEF">
+                      <div style="background:#F4FAFC;border-bottom:1px solid #E7F0F3;padding:11px 15px;display:flex;align-items:center;gap:8px">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2C87B4" stroke-width="1.7"><path d="M10.3 3.3 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.3a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+                        <span style="font-size:11px;font-weight:600;letter-spacing:.04em;color:#2C87B4;flex:1">REVIEW REQUEST</span>
+                        <span style="{{ m.rBadgeStyle }}">{{ m.rBadge }}</span>
+                      </div>
+                      <div style="padding:14px 15px">
+                        <div style="font-size:14px;font-weight:600;color:#576164;margin-bottom:3px">{{ m.rTitle }}</div>
+                        <div style="font-size:11.5px;color:#9AA1A3;margin-bottom:10px">{{ m.rPlant }} · {{ m.rSummary }}</div>
+                        <div style="font-size:12.5px;color:#798183;line-height:1.5;border-left:2px solid #E1E9EC;padding-left:10px;margin-bottom:12px">{{ m.rNote }}</div>
+                        <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#2C87B4">{{ m.rCta }}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></div>
+                      </div>
+                    </button>
+                  </sc-if>
+
+                  <sc-if value="{{ m.isStatus }}" hint-placeholder-val="{{ false }}">
+                    <div style="border:1px solid {{ m.stBorder }};background:{{ m.stBg2 }};border-radius:14px;padding:12px 15px;width:340px;max-width:100%">
+                      <span style="{{ m.stChipStyle }}">{{ m.stLabel }}</span>
+                      <div style="font-size:13px;color:#576164;line-height:1.55;margin-top:9px">{{ m.text }}</div>
+                    </div>
+                  </sc-if>
+
+                  <span style="font-size:10.5px;color:#B7BDBE;padding:0 2px">{{ m.metaLine }}</span>
+                </div>
+              </div>
+            </sc-for>
+            <sc-if value="{{ aiTyping }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;gap:10px;align-items:flex-start">
+                <span style="width:30px;height:30px;border-radius:50%;background:#E2F3E9;color:#1E9E63;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex:none;margin-top:2px">PC</span>
+                <div style="display:flex;gap:4px;padding:12px 14px;background:#F2F5F4;border:1px solid #E9ECEC;border-radius:14px;border-bottom-left-radius:4px"><span style="width:7px;height:7px;border-radius:50%;background:#B7C4C0;animation:blink 1.2s infinite"></span><span style="width:7px;height:7px;border-radius:50%;background:#B7C4C0;animation:blink 1.2s infinite .2s"></span><span style="width:7px;height:7px;border-radius:50%;background:#B7C4C0;animation:blink 1.2s infinite .4s"></span></div>
+              </div>
+            </sc-if>
+          </div>
+
+          <div style="border-top:1px solid #EEF0F1;padding:12px 14px;display:flex;gap:10px;align-items:flex-end">
+            <sc-if value="{{ showAttach }}" hint-placeholder-val="{{ true }}">
+            <label style="width:42px;height:42px;border-radius:11px;flex:none;display:flex;align-items:center;justify-content:center;cursor:pointer;background:#F4F5F5;color:#798183;border:1px solid #E4E7E8" style-hover="background:#EBEDED" title="Attach a file">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21.4 11.05 12.25 20.2a5 5 0 0 1-7.07-7.07l9.19-9.19a3 3 0 0 1 4.24 4.24l-9.2 9.19a1 1 0 0 1-1.41-1.41l8.48-8.49"/></svg>
+              <input type="file" onChange="{{ onAttach }}" multiple style="display:none" />
+            </label>
+            </sc-if>
+            <textarea value="{{ threadDraft }}" onInput="{{ onThreadDraft }}" onKeyDown="{{ onThreadKey }}" placeholder="{{ composerPlaceholder }}" rows="1" style="flex:1;resize:none;border:1px solid #E4E7E8;border-radius:12px;padding:11px 14px;font:inherit;font-size:13.5px;color:#576164;outline:none;max-height:120px;line-height:1.5"></textarea>
+            <button onClick="{{ sendThread }}" disabled="{{ sendDisabled }}" style="{{ sendBtnStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M4 12h15M13 6l6 6-6 6"/></svg></button>
+          </div>
+        </div>
+        </sc-if>
+      </div>
+      </sc-if>
+
+      <!-- ═══ PLANT · DASHBOARD ═══ -->
+      <sc-if value="{{ vPlantDash }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Plant Dashboard" style="display:flex;flex-direction:column;gap:20px;max-width:1280px">
+        <div style="background:#fff;border:1px solid #ECEEEF;border-radius:18px;padding:24px 26px;box-shadow:0 1px 3px rgba(0,0,0,.04);display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+          <div style="flex:1;min-width:260px">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px"><h2 style="font-size:22px;font-weight:600;color:#576164;margin:0">{{ scopePlant.name }}</h2><span style="{{ scopePlant.chipStyle }}">{{ scopePlant.chipLabel }}</span></div>
+            <p style="font-size:13.5px;color:#98A0A1;margin:0">{{ plantStatusText }}</p>
+          </div>
+        </div>
+        <sc-if value="{{ plantHasAlert }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ openPlantAnomaly }}" style="display:flex;align-items:center;gap:16px;width:100%;text-align:left;border:1px solid {{ bannerBorder }};background:{{ bannerBg }};border-radius:16px;padding:18px 22px;cursor:pointer;font:inherit" style-hover="filter:brightness(.985)">
+            <span style="width:46px;height:46px;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;flex:none"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="{{ bannerIconStroke }}" stroke-width="1.6"><path d="M10.3 3.3 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.3a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg></span>
+            <span style="flex:1;min-width:0"><span style="font-size:10.5px;font-weight:600;letter-spacing:.06em;color:{{ bannerIconStroke }};background:{{ bannerChipBg }};border-radius:20px;padding:4px 11px">ANOMALY DETECTED</span><span style="font-size:16px;font-weight:600;color:#576164;display:block;margin-top:8px">{{ anomTitle }}</span><span style="font-size:12.5px;color:#9AA1A3">{{ anomSubline }} · click to open the analysis</span></span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B7BDBE" stroke-width="1.8"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+        </sc-if>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
+          <sc-for list="{{ plantKpis }}" as="k" hint-placeholder-count="4">
+            <div style="background:#fff;border:1px solid #ECEEEF;border-radius:16px;padding:19px 20px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+              <div style="font-size:12.5px;color:#9AA1A3;margin-bottom:9px">{{ k.label }}</div>
+              <div style="font-size:29px;font-weight:300;line-height:1;color:{{ k.color }}">{{ k.value }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <sc-if value="{{ advanced }}" hint-placeholder-val="{{ true }}">
+          <div>
+            <div style="font-size:10.5px;font-weight:600;letter-spacing:.1em;color:#B7BDBE;margin-bottom:12px">PROCESS VALUES</div>
+            <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px">
+              <sc-for list="{{ plantExtra }}" as="k" hint-placeholder-count="6">
+                <div style="background:#fff;border:1px solid #ECEEEF;border-radius:14px;padding:14px 16px">
+                  <div style="font-size:11.5px;color:#9AA1A3;margin-bottom:6px">{{ k.label }}</div>
+                  <div style="font-size:19px;font-weight:400;color:{{ k.color }}">{{ k.value }}</div>
+                  <div style="font-size:11px;color:#B7BDBE;margin-top:2px">{{ k.unit }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <div style="display:grid;grid-template-columns:1fr;gap:16px;align-items:start">
+          <div style="background:#fff;border:1px solid #ECEEEF;border-radius:18px;padding:22px 24px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+            <h2 style="font-size:18px;font-weight:600;color:#576164;margin:0 0 4px">Methane output — {{ chartLabel }}</h2>
+            <div style="font-size:12.5px;color:#A4ABAC;margin-bottom:6px">Normal threshold 52%</div>
+            <svg viewBox="0 0 480 200" preserveAspectRatio="none" style="width:100%;height:150px;display:block;margin-top:4px">
+              <line x1="20" y1="110" x2="460" y2="110" stroke="#B8CFC4" stroke-width="1" stroke-dasharray="4 5"/>
+              <polyline points="{{ scopePlant.trend }}" fill="none" stroke="{{ scopePlant.trendColor }}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+            </svg>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
+              <span style="font-size:11px;color:#B2B8B9">{{ chartAgoLabel }} → now</span>
+              <div style="display:flex;gap:6px">
+                <sc-for list="{{ chartPills }}" as="p" hint-placeholder-count="3"><button onClick="{{ p.onClick }}" style="{{ p.style }}">{{ p.text }}</button></sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ═══ PLANT · ANOMALY LIST ═══ -->
+      <sc-if value="{{ vPlantAnomList }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Plant Anomaly List" style="display:flex;flex-direction:column;gap:20px;max-width:1280px">
+        <sc-if value="{{ plantHasAlert }}" hint-placeholder-val="{{ true }}">
+          <div style="background:#fff;border:1px solid #ECEEEF;border-radius:18px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+            <h2 style="font-size:18px;font-weight:600;color:#576164;margin:0 0 4px">Active alert</h2>
+            <div style="font-size:12.5px;color:#A4ABAC;margin-bottom:16px">Raised from an anomaly — several elevated values interpreted together · click to open the analysis</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <sc-for list="{{ anomalyEvents }}" as="a" hint-placeholder-count="1">
+                <button onClick="{{ a.onClick }}" style="display:flex;align-items:center;gap:16px;width:100%;text-align:left;border:1px solid {{ a.border }};background:{{ a.bg }};border-radius:14px;padding:18px 20px;cursor:pointer;font:inherit" style-hover="filter:brightness(.98)">
+                  <span style="width:44px;height:44px;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;flex:none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C6841A" stroke-width="1.6"><path d="M10.3 3.3 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.3a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg></span>
+                  <span style="flex:1;min-width:0"><span style="{{ a.chipStyle }}">{{ a.chipLabel }}</span><sc-if value="{{ a.hasOutcome }}" hint-placeholder-val="{{ false }}"><span style="{{ a.outcomeStyle }}">{{ a.outcomeLabel }}</span></sc-if><span style="font-size:16px;font-weight:600;color:#576164;display:block;margin-top:7px">{{ a.title }}</span><span style="font-size:12.5px;color:#9AA1A3">{{ a.summary }}</span></span>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B7BDBE" stroke-width="1.8"><path d="M9 6l6 6-6 6"/></svg>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ plantNoAlert }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#fff;border:1px solid #ECEEEF;border-radius:18px;padding:48px;box-shadow:0 1px 3px rgba(0,0,0,.04);text-align:center">
+            <div style="width:56px;height:56px;border-radius:50%;background:#E4F4EA;display:flex;align-items:center;justify-content:center;margin:0 auto 16px"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1E9E63" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></div>
+            <div style="font-size:18px;font-weight:600;color:#576164;margin-bottom:6px">No active alerts</div>
+            <p style="font-size:13.5px;color:#A4ABAC;margin:0">All process values for this plant are within the normal range.</p>
+          </div>
+        </sc-if>
+      </div>
+      </sc-if>
+
+      <!-- ═══ PLANT · ANOMALY DETAIL · CLIENT ═══ -->
+      <sc-if value="{{ vAnomClient }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Anomaly Client" style="display:flex;flex-direction:column;gap:18px;max-width:1280px">
+        <button onClick="{{ backToAlerts }}" style="align-self:flex-start;display:flex;align-items:center;gap:7px;border:0;background:transparent;font:inherit;font-size:13px;color:#8B9294;cursor:pointer;padding:0" style-hover="color:#576164"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 6l-6 6 6 6"/></svg>Back to alerts</button>
+        <div style="display:flex;gap:10px;align-items:center"><span style="font-size:11px;font-weight:600;color:#2C87B4;background:#E4F1FA;border-radius:20px;padding:5px 13px">JULIA USER · OPERATOR</span><sc-if value="{{ anomHasStatus }}" hint-placeholder-val="{{ false }}"><span style="{{ anomStatusStyle }}">{{ anomStatusLabel }}</span></sc-if></div>
+        <div style="background:#FDF8EE;border:1px solid #F1E2C4;border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:13px"><span style="width:36px;height:36px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;flex:none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C6841A" stroke-width="1.6"><path d="M10.3 3.3 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.3a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg></span><div style="flex:1"><span style="font-size:14px;font-weight:600;color:#576164;display:block">{{ anomBanner }}</span><span style="font-size:12px;color:#9AA1A3">Category: {{ anomCategory }}</span></div></div>
+        <sc-if value="{{ advanced }}" hint-placeholder-val="{{ true }}">
+          <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px">
+            <sc-for list="{{ clientExtra }}" as="k" hint-placeholder-count="6"><div style="background:#fff;border:1px solid #ECEEEF;border-radius:14px;padding:14px 16px"><div style="font-size:11.5px;color:#9AA1A3;margin-bottom:6px">{{ k.label }}</div><div style="font-size:19px;font-weight:400;color:{{ k.color }}">{{ k.value }}</div><div style="font-size:11px;color:#B7BDBE;margin-top:2px">{{ k.unit }}</div></div></sc-for>
+          </div>
+        </sc-if>
+<div style="order:2;background:#fff;border:1px solid #ECEEEF;border-radius:18px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+          <div style="display:flex;align-items:center;gap:10px;margin:0 0 3px"><h2 style="font-size:18px;font-weight:600;color:#576164;margin:0">{{ actionsTitle }}</h2><sc-if value="{{ hasExpertMeasures }}" hint-placeholder-val="{{ false }}"><span style="font-size:10.5px;font-weight:700;letter-spacing:.04em;color:#1E9E63;background:#E4F4EA;border-radius:20px;padding:4px 11px">OEKOBIT CONFIRMED</span></sc-if></div>
+          <div style="font-size:12.5px;color:#A4ABAC;margin-bottom:16px">{{ actionsSubtitle }} · {{ actionsDoneLabel }}</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <sc-for list="{{ actions }}" as="a" hint-placeholder-count="3">
+              <button onClick="{{ a.onToggle }}" style="display:flex;align-items:center;gap:14px;width:100%;text-align:left;border:1px solid {{ a.rowBorder }};background:{{ a.rowBg }};border-radius:12px;padding:14px 16px;cursor:pointer;font:inherit" style-hover="filter:brightness(.99)">
+                <span style="width:24px;height:24px;border-radius:7px;border:1.5px solid {{ a.boxBorder }};background:{{ a.boxBg }};color:#fff;font-size:14px;font-weight:700;line-height:1;display:flex;align-items:center;justify-content:center;flex:none">{{ a.check }}</span>
+                <span style="flex:1;font-size:14px;color:{{ a.textColor }};{{ a.strike }}">{{ a.text }}</span>
+                <sc-if value="{{ a.showExpertTag }}" hint-placeholder-val="{{ false }}"><span style="{{ a.tagStyle }}">OEKOBIT</span></sc-if>
+              </button>
+            </sc-for>
+            <sc-if value="{{ showSendToExpert }}" hint-placeholder-val="{{ true }}"><button onClick="{{ sendToExpert }}" style="margin-top:6px;align-self:flex-start;border:1px solid #E2E5E6;background:#fff;color:#576164;border-radius:10px;padding:11px 18px;font:inherit;font-size:13px;font-weight:600;cursor:pointer" style-hover="background:#F4F7F7">Send to expert for review</button></sc-if>
+          </div>
+        </div>
+        <div style="order:1;display:grid;grid-template-columns:1.4fr 1fr;gap:16px;align-items:start">
+          <div style="background:#fff;border:1px solid #ECEEEF;border-radius:18px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+            <h2 style="font-size:18px;font-weight:600;color:#576164;margin:0">Elevated values</h2>
+            <div style="font-size:12.5px;color:#A4ABAC;margin:4px 0 14px">These readings triggered the anomaly · interpreted together</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <sc-for list="{{ elevatedCards }}" as="e" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:14px;border:1px solid #EEF0F1;border-radius:12px;padding:14px 16px">
+                  <span style="flex:1;min-width:0"><span style="font-size:14px;font-weight:600;color:#576164;display:block">{{ e.label }}</span><span style="font-size:11.5px;color:#A4ABAC">{{ e.normal }}</span></span>
+                  <span style="font-size:22px;font-weight:300;color:#576164">{{ e.value }}</span>
+                  <span style="{{ e.chipStyle }}">{{ e.chipLabel }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="background:#fff;border:1px solid #ECEEEF;border-radius:18px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+            <h2 style="font-size:18px;font-weight:600;color:#576164;margin:0">Current situation</h2>
+            <div style="font-size:12.5px;color:#A4ABAC;margin:4px 0 12px">Plain-language explanation for operators</div>
+            <div style="font-size:16px;font-weight:600;color:#576164;margin-bottom:10px">{{ anomInterpTitle }}</div>
+            <p style="font-size:13.5px;line-height:1.65;color:#798183;margin:0 0 14px">{{ anomInterp }}</p>
+            <div style="background:#F5F8FA;border:1px solid #E4EEF3;border-radius:12px;padding:13px 15px;font-size:13px;color:#2A5B70"><strong style="font-weight:700">Recommended:</strong> {{ anomRec }}</div>
+          </div>
+        </div>
+
+        <sc-if value="{{ anomHasThread }}" hint-placeholder-val="{{ false }}">
+        <div style="order:9;background:#fff;border:1px solid #ECEEEF;border-radius:18px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:3px">
+            <h2 style="font-size:18px;font-weight:600;color:#576164;margin:0">Expert conversation</h2>
+            <button onClick="{{ openAnomInMessages }}" style="display:flex;align-items:center;gap:6px;border:0;background:transparent;font:inherit;font-size:13px;font-weight:600;color:#2C87B4;cursor:pointer;padding:0" style-hover="color:#1F6B8F">Open in Messages<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M9 6l6 6-6 6"/></svg></button>
+          </div>
+          <div style="font-size:12.5px;color:#A4ABAC;margin-bottom:18px">Your exchange with Bernd Biogas, OEKOBIT process expert, about this anomaly</div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <sc-for list="{{ anomThread }}" as="m" hint-placeholder-count="2">
+              <div style="{{ m.rowStyle }}">
+                <sc-if value="{{ m.showAv }}" hint-placeholder-val="{{ true }}"><span style="{{ m.avStyle }}">{{ m.initials }}</span></sc-if>
+                <div style="display:flex;flex-direction:column;align-items:{{ m.align }};gap:3px;max-width:78%">
+                  <sc-if value="{{ m.hasStChip }}" hint-placeholder-val="{{ false }}"><span style="{{ m.stChipStyle }}">{{ m.stLabel }}</span></sc-if>
+                  <div style="{{ m.bubbleStyle }}">{{ m.text }}</div>
+                  <span style="font-size:10.5px;color:#B7BDBE">{{ m.metaLine }}</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        </sc-if>
+      </div>
+      </sc-if>
+
+      <!-- ═══ PLANT · ANOMALY DETAIL · EXPERT ═══ -->
+      <sc-if value="{{ vAnomExpert }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Anomaly Expert" style="display:flex;flex-direction:column;gap:16px;max-width:1280px">
+        <button onClick="{{ backToAlerts }}" style="align-self:flex-start;display:flex;align-items:center;gap:7px;border:0;background:transparent;font:inherit;font-size:13px;color:#8B9294;cursor:pointer;padding:0" style-hover="color:#576164"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 6l-6 6 6 6"/></svg>Back to alerts</button>
+        <div style="background:#FDF8EE;border:1px solid #F1E2C4;border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:13px"><span style="width:36px;height:36px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;flex:none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C6841A" stroke-width="1.6"><path d="M10.3 3.3 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.3a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg></span><div style="flex:1"><span style="font-size:14px;font-weight:600;color:#576164;display:block">{{ anomBanner }}</span><span style="font-size:12px;color:#9AA1A3">Category: {{ anomCategory }}</span></div></div>
+        <div style="display:grid;grid-template-columns:1fr 1.35fr 1fr;gap:16px;align-items:start">
+          <div style="background:#fff;border:1px solid #ECEEEF;border-radius:18px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+            <h2 style="font-size:17px;font-weight:600;color:#576164;margin:0">Alert signals</h2>
+            <div style="font-size:12px;color:#A4ABAC;margin:3px 0 16px">Prioritised by severity</div>
+            <div style="display:flex;flex-direction:column;gap:9px">
+              <sc-for list="{{ alertQueue }}" as="q" hint-placeholder-count="5"><div style="border:1px solid {{ q.border }};background:{{ q.bg }};border-radius:12px;padding:13px 15px"><div style="display:flex;align-items:center;gap:9px;margin-bottom:5px"><span style="{{ q.chipStyle }}">{{ q.chipLabel }}</span></div><div style="font-size:14px;font-weight:600;color:#576164">{{ q.name }}</div><div style="font-size:12.5px;color:#9AA1A3;margin-top:2px">{{ q.value }}</div></div></sc-for>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div style="background:#fff;border:1px solid #ECEEEF;border-radius:18px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+              <h2 style="font-size:17px;font-weight:600;color:#576164;margin:0">Model signal</h2>
+              <div style="font-size:12px;color:#A4ABAC;margin:3px 0 18px">Rule-based warning + Isolation Forest anomaly</div>
+              <div style="display:flex;justify-content:space-around;gap:16px;margin-bottom:20px">
+                <div style="text-align:center"><svg width="128" height="128" viewBox="0 0 128 128"><circle cx="64" cy="64" r="52" fill="none" stroke="#EEF0F1" stroke-width="12"/><circle cx="64" cy="64" r="52" fill="none" stroke="#38A4D4" stroke-width="12" stroke-linecap="round" stroke-dasharray="{{ scoreArc }}" transform="rotate(-90 64 64)"/><text x="64" y="60" text-anchor="middle" font-size="30" font-weight="300" fill="#576164" font-family="Mulish">{{ scoreVal }}</text><text x="64" y="80" text-anchor="middle" font-size="11" fill="#A4ABAC" font-family="Mulish">Anomaly score</text></svg></div>
+                <div style="text-align:center"><svg width="128" height="128" viewBox="0 0 128 128"><circle cx="64" cy="64" r="52" fill="none" stroke="#EEF0F1" stroke-width="12"/><circle cx="64" cy="64" r="52" fill="none" stroke="#C6841A" stroke-width="12" stroke-linecap="round" stroke-dasharray="{{ riskArc }}" transform="rotate(-90 64 64)"/><text x="64" y="60" text-anchor="middle" font-size="24" font-weight="400" fill="#576164" font-family="Mulish">{{ riskVal }}</text><text x="64" y="80" text-anchor="middle" font-size="11" fill="#A4ABAC" font-family="Mulish">Risk level</text></svg></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;border-top:1px solid #F2F4F4;padding-top:12px"><span style="color:#9AA1A3">overall_rule_status</span><span style="font-weight:600;color:#C6841A">{{ ruleStatus }}</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;padding-top:10px"><span style="color:#9AA1A3">possible_issue_category</span><span style="font-weight:600;color:#2C87B4">{{ anomCategory }}</span></div>
+            </div>
+            <div style="background:#fff;border:1px solid #ECEEEF;border-radius:18px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+              <h2 style="font-size:17px;font-weight:600;color:#576164;margin:0">Affected variables</h2>
+              <div style="font-size:12px;color:#A4ABAC;margin:3px 0 14px">Raw values for expert interpretation</div>
+              <div style="display:flex;flex-direction:column">
+                <sc-for list="{{ variables }}" as="v" hint-placeholder-count="5"><div style="display:grid;grid-template-columns:1.4fr .8fr auto;align-items:center;gap:10px;font-size:13px;border-bottom:1px solid #F4F5F5;padding:9px 0"><span style="color:#798183;font-family:ui-monospace,Menlo,monospace;font-size:12.5px">{{ v.name }}</span><span style="color:#576164;font-weight:600;text-align:right">{{ v.value }}</span><span style="{{ v.chipStyle }};justify-self:end">{{ v.chipLabel }}</span></div></sc-for>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div style="background:#fff;border:1px solid #ECEEEF;border-radius:18px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+              <h2 style="font-size:17px;font-weight:600;color:#576164;margin:0 0 4px">AI explanation</h2>
+              <div style="font-size:12px;color:#A4ABAC;margin-bottom:12px">Prepared for expert validation</div>
+              <p style="font-size:13px;line-height:1.65;color:#798183;margin:0 0 14px">{{ anomExplain }}</p>
+              <span style="display:inline-block;font-size:11px;font-weight:600;color:#C6841A;background:#FBEFD6;border-radius:20px;padding:5px 13px">EXPERT REVIEW REQUIRED</span>
+            </div>
+            <div style="background:#fff;border:1px solid #ECEEEF;border-radius:18px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+              <h2 style="font-size:17px;font-weight:600;color:#576164;margin:0 0 6px">Expert decision</h2>
+              <div style="font-size:12px;color:#A4ABAC;margin-bottom:16px">Review the signal, then decide the outcome.</div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <button onClick="{{ openConfirm }}" style="border:0;border-radius:11px;padding:13px;font:inherit;font-size:13.5px;font-weight:600;color:#fff;background:#1E9E63;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Confirm anomaly & define measures</button>
+                <button onClick="{{ decData }}" style="border:1px solid #D3DEE3;border-radius:11px;padding:13px;font:inherit;font-size:13.5px;font-weight:600;color:#2C6E8A;background:#fff;cursor:pointer" style-hover="background:#F4F9FB">Request more data</button>
+                <button onClick="{{ decFalse }}" style="border:1px solid #E5DCC6;border-radius:11px;padding:13px;font:inherit;font-size:13.5px;font-weight:600;color:#9A6E1A;background:#fff;cursor:pointer" style-hover="background:#FBF6EC">Mark as false alarm</button>
+              </div>
+              <sc-if value="{{ hasDecision }}" hint-placeholder-val="{{ false }}"><div style="margin-top:14px;background:#F5F8FA;border:1px solid #E4EEF3;border-radius:10px;padding:11px 13px;font-size:12.5px;color:#2A5B70">{{ decisionNote }}</div></sc-if>
+              <div style="font-size:11.5px;color:#B7BDBE;margin-top:14px">Audit log and outcome are stored as learning data.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+    </div>
+  </main>
+
+  <!-- ═══════════ COPILOT ═══════════ -->
+  <sc-if value="{{ showCopilot }}" hint-placeholder-val="{{ true }}">
+  <sc-if value="{{ copilotOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;bottom:96px;right:28px;width:384px;height:544px;background:#fff;border:1px solid #E2E5E6;border-radius:20px;box-shadow:0 18px 50px rgba(0,0,0,.18);display:flex;flex-direction:column;overflow:hidden;animation:cpIn .25s cubic-bezier(.4,0,.2,1);z-index:50">
+      <div style="padding:16px 18px;display:flex;align-items:center;gap:11px;border-bottom:1px solid #EEF0F1">
+        <img src="assets/oekobit-flame.svg" alt="" style="height:28px;width:auto;flex:none"/>
+        <div style="flex:1;line-height:1.2"><div style="font-size:14.5px;font-weight:700;color:#576164">Plant Colleague</div><div style="font-size:11px;color:#A4ABAC">Agentic AI · always available</div></div>
+        <button onClick="{{ toggleCopilot }}" style="border:0;background:#F0F1F1;width:28px;height:28px;border-radius:8px;cursor:pointer;color:#798183;font-size:16px;display:flex;align-items:center;justify-content:center">×</button>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:16px">
+        <sc-for list="{{ messages }}" as="m" hint-placeholder-count="1"><div style="{{ m.rowStyle }}"><div style="{{ m.bubbleStyle }}">{{ m.t }}</div></div></sc-for>
+        <sc-if value="{{ typing }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:4px;padding:8px 4px"><span style="width:7px;height:7px;border-radius:50%;background:#C2C8C9;animation:blink 1.2s infinite"></span><span style="width:7px;height:7px;border-radius:50%;background:#C2C8C9;animation:blink 1.2s infinite .2s"></span><span style="width:7px;height:7px;border-radius:50%;background:#C2C8C9;animation:blink 1.2s infinite .4s"></span></div></sc-if>
+      </div>
+      <div style="padding:12px 14px;border-top:1px solid #EEF0F1">
+        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:11px">
+          <sc-for list="{{ suggestions }}" as="s" hint-placeholder-count="3"><button onClick="{{ s.onClick }}" style="border:1px solid #E4EEF3;background:#F5F9FB;color:#2A6379;border-radius:16px;padding:6px 12px;font:inherit;font-size:12px;cursor:pointer" style-hover="background:#EAF3F7">{{ s.text }}</button></sc-for>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;background:#F4F5F5;border-radius:12px;padding:5px 5px 5px 14px">
+          <input value="{{ draft }}" onInput="{{ onDraft }}" onKeyDown="{{ onKey }}" placeholder="Ask a question…" style="flex:1;border:0;background:transparent;font:inherit;font-size:13.5px;color:#576164;outline:none"/>
+          <button onClick="{{ send }}" style="border:0;width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#5CB4DE,#38A4D4);cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M4 12h15M13 6l6 6-6 6"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+  <button onClick="{{ toggleCopilot }}" style="position:fixed;bottom:28px;right:28px;height:56px;padding:0 22px 0 18px;border:0;border-radius:30px;background:linear-gradient(135deg,#5CB4DE,#38A4D4);color:#fff;cursor:pointer;display:flex;align-items:center;gap:10px;font:inherit;font-size:14px;font-weight:700;animation:cpPulse 3s ease-in-out infinite;z-index:49">
+    <img src="assets/oekobit-flame-white.svg" alt="" style="height:22px;width:auto"/>
+    Plant Colleague
+  </button>
+  </sc-if>
+
+  <!-- ═══ SEND TO EXPERT · MODAL ═══ -->
+  <sc-if value="{{ reviewModalOpen }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;inset:0;z-index:60;background:rgba(40,52,54,.42);display:flex;align-items:center;justify-content:center;padding:32px">
+    <div style="width:100%;max-width:560px;max-height:88vh;overflow-y:auto;background:#fff;border-radius:20px;box-shadow:0 24px 60px rgba(0,0,0,.22)">
+
+      <sc-if value="{{ reviewSubmitted }}" hint-placeholder-val="{{ false }}">
+        <!-- confirmation -->
+        <div style="padding:40px 36px;text-align:center">
+          <span style="width:64px;height:64px;border-radius:50%;background:#E4F4EA;display:inline-flex;align-items:center;justify-content:center;margin-bottom:20px"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#1E9E63" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></span>
+          <h2 style="font-size:21px;font-weight:600;color:#576164;margin:0 0 8px">Successfully submitted</h2>
+          <p style="font-size:14px;line-height:1.6;color:#8B9294;margin:0 auto 24px;max-width:400px">Your review request has been sent to Bernd Biogas, your OEKOBIT process expert, together with the anomaly summary, your checked-off actions and your note.</p>
+          <div style="text-align:left;background:#F5F8FA;border:1px solid #E4EEF3;border-radius:14px;padding:18px 20px;margin-bottom:24px">
+            <div style="font-size:11px;font-weight:700;letter-spacing:.08em;color:#2C87B4;margin-bottom:12px">WHAT HAPPENS NEXT</div>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;gap:12px;align-items:flex-start"><span style="width:22px;height:22px;border-radius:50%;background:#E4F1FA;color:#2C87B4;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none">1</span><span style="font-size:13px;line-height:1.5;color:#798183">Bernd Biogas reviews the anomaly and your notes.</span></div>
+              <div style="display:flex;gap:12px;align-items:flex-start"><span style="width:22px;height:22px;border-radius:50%;background:#E4F1FA;color:#2C87B4;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none">2</span><span style="font-size:13px;line-height:1.5;color:#798183">They assess whether it is genuine and add a recommendation.</span></div>
+              <div style="display:flex;gap:12px;align-items:flex-start"><span style="width:22px;height:22px;border-radius:50%;background:#E4F1FA;color:#2C87B4;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none">3</span><span style="font-size:13px;line-height:1.5;color:#798183">Their reply lands in <strong style="color:#576164;font-weight:700">Messages</strong> — you’ll be notified there.</span></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;justify-content:center">
+            <button onClick="{{ closeReviewModal }}" style="border:1px solid #E2E5E6;background:#fff;color:#798183;border-radius:10px;padding:12px 20px;font:inherit;font-size:13.5px;font-weight:600;cursor:pointer" style-hover="background:#F4F7F7">Close</button>
+            <button onClick="{{ goToRequestsFromModal }}" style="border:0;background:#1E9E63;color:#fff;border-radius:10px;padding:12px 22px;font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px" style-hover="filter:brightness(1.05)">Go to Messages<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ reviewModalForm }}" hint-placeholder-val="{{ true }}">
+        <!-- form -->
+        <div style="padding:26px 30px 20px;border-bottom:1px solid #EEF0F1;display:flex;align-items:flex-start;gap:14px">
+          <span style="width:42px;height:42px;border-radius:11px;background:#E4F1FA;display:flex;align-items:center;justify-content:center;flex:none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2C87B4" stroke-width="1.7"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+          <div style="flex:1;min-width:0">
+            <h2 style="font-size:19px;font-weight:600;color:#576164;margin:0 0 3px">Send to expert for review</h2>
+            <p style="font-size:13px;color:#9AA1A3;margin:0;line-height:1.5">Bernd Biogas, your OEKOBIT process expert, will assess this anomaly and reply in Messages.</p>
+          </div>
+          <button onClick="{{ closeReviewModal }}" style="border:0;background:#F0F1F1;width:30px;height:30px;border-radius:9px;cursor:pointer;color:#798183;font-size:17px;display:flex;align-items:center;justify-content:center;flex:none" style-hover="background:#E7E9E9">×</button>
+        </div>
+        <div style="padding:22px 30px 28px;display:flex;flex-direction:column;gap:20px">
+          <div style="background:#FDF8EE;border:1px solid #F1E2C4;border-radius:12px;padding:14px 16px">
+            <div style="font-size:11px;font-weight:700;letter-spacing:.06em;color:#C6841A;margin-bottom:6px">ANOMALY</div>
+            <div style="font-size:15px;font-weight:600;color:#576164;margin-bottom:3px">{{ reviewAnomTitle }}</div>
+            <div style="font-size:12.5px;color:#9AA1A3">{{ reviewAnomSummary }}</div>
+            <div style="font-size:13px;color:#798183;margin-top:8px;line-height:1.5">These readings were grouped into one anomaly and flagged for expert review.</div>
+          </div>
+          <div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px"><span style="font-size:13px;font-weight:600;color:#576164">Recommended actions</span><span style="font-size:11.5px;color:#A4ABAC">{{ reviewDoneLabel }}</span></div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ reviewItems }}" as="r" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:12px;border:1px solid #EEF0F1;border-radius:10px;padding:11px 14px">
+                  <span style="width:20px;height:20px;border-radius:6px;border:1.5px solid {{ r.boxBorder }};background:{{ r.boxBg }};color:#fff;font-size:12px;font-weight:700;line-height:1;display:flex;align-items:center;justify-content:center;flex:none">{{ r.mark }}</span>
+                  <span style="flex:1;font-size:13.5px;color:{{ r.textColor }}">{{ r.text }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div>
+            <label style="font-size:13px;font-weight:600;color:#576164;display:block;margin-bottom:8px">Message to the expert</label>
+            <textarea value="{{ reviewNote }}" onInput="{{ onReviewNote }}" placeholder="Describe what you have observed on site, what you already checked, and any question for the expert…" style="width:100%;box-sizing:border-box;min-height:110px;resize:vertical;border:1px solid #E2E5E6;border-radius:12px;padding:13px 15px;font:inherit;font-size:13.5px;line-height:1.6;color:#576164;outline:none" style-focus="border-color:#38A4D4"></textarea>
+          </div>
+          <div style="display:flex;gap:10px;justify-content:flex-end">
+            <button onClick="{{ closeReviewModal }}" style="border:1px solid #E2E5E6;background:#fff;color:#798183;border-radius:10px;padding:12px 20px;font:inherit;font-size:13.5px;font-weight:600;cursor:pointer" style-hover="background:#F4F7F7">Cancel</button>
+            <button onClick="{{ submitReview }}" disabled="{{ reviewSubmitDisabled }}" style="{{ reviewSubmitStyle }}" style-hover="filter:brightness(1.05)">Submit to expert</button>
+          </div>
+        </div>
+      </sc-if>
+
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ═══ CONFIRM ANOMALY · EXPERT MODAL ═══ -->
+  <sc-if value="{{ confirmModalOpen }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;inset:0;z-index:60;background:rgba(40,52,54,.42);display:flex;align-items:center;justify-content:center;padding:32px">
+    <div style="width:100%;max-width:580px;max-height:88vh;overflow-y:auto;background:#fff;border-radius:20px;box-shadow:0 24px 60px rgba(0,0,0,.22)">
+      <div style="padding:24px 30px 18px;border-bottom:1px solid #F0F1F1;display:flex;align-items:flex-start;gap:14px">
+        <span style="width:42px;height:42px;border-radius:12px;background:#E4F4EA;display:flex;align-items:center;justify-content:center;flex:none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1E9E63" stroke-width="1.8"><path d="M20 6L9 17l-5-5"/></svg></span>
+        <div style="flex:1;min-width:0">
+          <h2 style="font-size:19px;font-weight:600;color:#576164;margin:0 0 3px">Confirm anomaly & define measures</h2>
+          <p style="font-size:13px;color:#9AA1A3;margin:0;line-height:1.5">The measures below become {{ confirmForName }}'s action plan — shown on the anomaly dashboard and sent to Messages.</p>
+        </div>
+        <button onClick="{{ closeConfirm }}" style="border:0;background:#F0F1F1;width:30px;height:30px;border-radius:9px;cursor:pointer;color:#798183;font-size:17px;display:flex;align-items:center;justify-content:center;flex:none">×</button>
+      </div>
+      <div style="padding:22px 30px 28px;display:flex;flex-direction:column;gap:20px">
+        <div style="background:#FDF8EE;border:1px solid #F1E2C4;border-radius:12px;padding:13px 16px">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.06em;color:#C6841A;margin-bottom:5px">ANOMALY</div>
+          <div style="font-size:15px;font-weight:600;color:#576164">{{ reviewAnomTitle }}</div>
+          <div style="font-size:12.5px;color:#9AA1A3;margin-top:2px">{{ reviewAnomSummary }}</div>
+        </div>
+        <div>
+          <label style="font-size:13px;font-weight:600;color:#576164;display:block;margin-bottom:4px">Measures</label>
+          <div style="font-size:12px;color:#A4ABAC;margin-bottom:8px">One measure per line — these become checkable tasks for the operator.</div>
+          <textarea value="{{ measuresDraft }}" onInput="{{ onMeasuresDraft }}" placeholder="e.g. Reduce the latest feedstock batch by ~15 % for 48 h&#10;Re-test the lab sample tomorrow&#10;Raise desulphurisation dosing if H₂S stays above 1000 ppm" style="width:100%;box-sizing:border-box;min-height:120px;resize:vertical;border:1px solid #E2E5E6;border-radius:12px;padding:13px 15px;font:inherit;font-size:13.5px;line-height:1.7;color:#576164;outline:none" style-focus="border-color:#1E9E63"></textarea>
+        </div>
+        <div>
+          <label style="font-size:13px;font-weight:600;color:#576164;display:block;margin-bottom:8px">Note to the operator <span style="font-weight:400;color:#A4ABAC">· optional</span></label>
+          <textarea value="{{ confirmMsg }}" onInput="{{ onConfirmMsg }}" placeholder="Explain your assessment and why these steps matter…" style="width:100%;box-sizing:border-box;min-height:80px;resize:vertical;border:1px solid #E2E5E6;border-radius:12px;padding:13px 15px;font:inherit;font-size:13.5px;line-height:1.6;color:#576164;outline:none" style-focus="border-color:#1E9E63"></textarea>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button onClick="{{ closeConfirm }}" style="border:1px solid #E2E5E6;background:#fff;color:#798183;border-radius:10px;padding:12px 20px;font:inherit;font-size:13.5px;font-weight:600;cursor:pointer" style-hover="background:#F4F7F7">Cancel</button>
+          <button onClick="{{ confirmAnomaly }}" disabled="{{ confirmDisabled }}" style="{{ confirmSubmitStyle }}" style-hover="filter:brightness(1.05)">Confirm & send measures</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    scope: 'fleet', fModule: 'overview', pModule: 'dashboard', anomAlert: null,
+    hist: [{ scope:'fleet', fModule:'overview', pModule:'dashboard', anomAlert:null }], hi: 0, userMenuOpen: false,
+    role: 'client', level: 'basic',
+    anomFilter: 'all', custFilter: 'all', reportScope: 'all',
+    copilotOpen: false, draft: '', typing: false, decision: '', selUpdate: 0, custNote: '', reportNote: '',
+    threads: {}, threadsClosed: {}, readMap: {}, caseStatus: {}, msgPlant: null, threadDraft: '',
+    composeSubject: '', composeTarget: 'general', composeTopic: '', subjects: {},
+    messages: [{ u: false, t: "Hi, I'm your Plant Colleague. I explain alerts, interpret values and suggest actions. What would you like to know?" }]
+  };
+
+  navTo(route, extra){ this.setState(s=>{ const h=s.hist.slice(0,s.hi+1); h.push(route); return Object.assign({}, route, extra||{}, { hist:h, hi:h.length-1, userMenuOpen:false }); }); }
+  back(){ this.setState(s=> s.hi>0 ? Object.assign({}, s.hist[s.hi-1], { hi:s.hi-1 }) : {}); }
+  forward(){ this.setState(s=> s.hi<s.hist.length-1 ? Object.assign({}, s.hist[s.hi+1], { hi:s.hi+1 }) : {}); }
+  goFleet(mod){ this.navTo({ scope:'fleet', fModule:mod, pModule:'dashboard', anomAlert:null }, { decision:'', custNote:'', reportNote:'', msgPlant:null }); }
+  enterPlant(i){ this.navTo({ scope:i, fModule:'overview', pModule:'dashboard', anomAlert:null }); }
+  goPlant(mod){ this.navTo({ scope:this.state.scope, fModule:'overview', pModule:mod, anomAlert:null }, { decision:'', custNote:'', msgPlant:null }); }
+  backToFleet(){ this.navTo({ scope:'fleet', fModule:'overview', pModule:'dashboard', anomAlert:null }); }
+  openAlert(i){ this.navTo({ scope:this.state.scope, fModule:'overview', pModule:'anomaly', anomAlert:i }, { decision:'' }); }
+  backToAlerts(){ this.navTo({ scope:this.state.scope, fModule:'overview', pModule:'anomaly', anomAlert:null }); }
+  now(){ const d=new Date(); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+  openThreadView(pi){ if(pi==='ai'){ this.setState({ msgPlant:'ai', threadDraft:'' }); return; } this.setState(s=>{ const rd={...(s.readMap||{})}; rd[pi]=((s.threads||{})[pi]||[]).length; return { msgPlant:pi, readMap:rd, threadDraft:'' }; }); }
+  startCompose(){ const S=this.state; const subj=(S.composeSubject||'').trim(); if(!subj) return; const key=S.composeTarget; this.setState(s=>{ const subs={...(s.subjects||{})}; subs[key]=subj; const th={...(s.threads||{})}; if(!th[key]) th[key]=[]; const rd={...(s.readMap||{})}; rd[key]=th[key].length; return { subjects:subs, threads:th, readMap:rd, composeOpen:false, msgPlant:key, threadDraft:'', composeSubject:'', composeTopic:'', composeTarget:'general' }; }); }
+  backToInbox(){ this.setState({ msgPlant:null }); }
+  sendThread(){ const S=this.state; const pi=S.msgPlant; if(pi==null) return; const t=(S.threadDraft||'').trim(); if(!t) return; if(pi==='ai'){ this.setState({ threadDraft:'' }); this.askThread(t); return; } const from=S.role==='client'?'julia':'bernd'; const msg={ id:Date.now(), from, kind:'text', text:t, time:this.now() };
+    this.setState(s=>{ const th={...(s.threads||{})}; th[pi]=[...(th[pi]||[]), msg]; const rc={...(s.threadsClosed||{})}; rc[pi]=false; const rd={...(s.readMap||{})}; rd[pi]=th[pi].length; return { threads:th, threadsClosed:rc, readMap:rd, threadDraft:'' }; }); }
+  askThread(t){ this.setState(s=>({ messages:[...s.messages,{u:true,t}], typing:true })); const reply=this.replyFor(t); setTimeout(()=>this.setState(s=>({ messages:[...s.messages,{u:false,t:reply}], typing:false })),650); }
+  onThreadDraft(e){ this.setState({ threadDraft:e.target.value }); }
+  fmtSize(b){ if(b<1024) return b+' B'; if(b<1048576) return (b/1024).toFixed(0)+' KB'; return (b/1048576).toFixed(1)+' MB'; }
+  onAttach(e){ const files=[...(e.target.files||[])]; if(!files.length) return; const S=this.state; const pi=S.msgPlant; if(pi==null) return; const from=S.role==='client'?'julia':'bernd'; const t=this.now(); const msgs=files.map((f,k)=>({ id:Date.now()+k, from, kind:'file', fileName:f.name, fileSize:this.fmtSize(f.size), time:t })); this.setState(s=>{ const th={...(s.threads||{})}; th[pi]=[...(th[pi]||[]), ...msgs]; const rc={...(s.threadsClosed||{})}; rc[pi]=false; const rd={...(s.readMap||{})}; rd[pi]=th[pi].length; return { threads:th, threadsClosed:rc, readMap:rd }; }); e.target.value=''; }
+  onThreadKey(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); this.sendThread(); } }
+  openReport(pi,ai){ this.navTo({ scope:pi, fModule:'overview', pModule:'anomaly', anomAlert:ai }); }
+  closeCase(){ const pi=this.state.msgPlant; if(pi==null) return; this.setState(s=>{ const th={...(s.threads||{})}; th[pi]=[...(th[pi]||[]), { id:Date.now(), from:'bernd', kind:'status', outcome:'closed', text:'Case closed. You can reopen it any time by sending a new message.', time:this.now() }]; const rc={...(s.threadsClosed||{})}; rc[pi]=true; return { threads:th, threadsClosed:rc }; }); }
+  decide(kind){
+    const map={ approve:'Anomaly confirmed. I reviewed the readings and the pattern is genuine. Recommended: reduce the latest feedstock batch by ~15 % for 48 h and re-test the lab sample. If H₂S stays above 1000 ppm, raise desulphurisation dosing. I will monitor Digester 2 and follow up in 24 h.', edit:'Recommendation adjusted. The trend is real but milder than the model scored it. Keep the feedstock as-is, re-test the lab sample tomorrow and watch the Digester 2 trend — no dosing change needed yet.', false:'Marked as false alarm. The readings match a known H₂S sensor drift, not a real process issue. No action needed; the probe is scheduled for recalibration.', data:'More data requested. Please share the latest lab sample and the feedstock batch notes so I can confirm the cause before recommending a step.' };
+    const body=map[kind]||''; const sc=this.state.scope;
+    this.setState(s=>{
+      const th={...(s.threads||{})}; let msgs=(th[sc]||[]).map(m=> (m.kind==='report')?{...m, report:{...m.report, decided:true, outcome:kind}}:m );
+      msgs=msgs.filter(m=> !(m.kind==='reply'));
+      msgs.push({ id:Date.now(), from:'bernd', kind:'reply', outcome:kind, text:body, time:this.now() });
+      th[sc]=msgs; const cs={...(s.caseStatus||{})}; cs[sc]=kind;
+      return { threads:th, caseStatus:cs, decision:kind };
+    });
+    this.navTo({ scope:sc, fModule:this.state.fModule, pModule:'customer', anomAlert:null }, { msgPlant:sc });
+  }
+  toggleCopilot(){ this.setState(s => ({ copilotOpen: !s.copilotOpen })); }
+  openConfirm(){ const sc=this.state.scope; const A=this.anomDef()[sc]; const pre=A?A.actions.join('\n'):''; this.setState(s=>({ confirmModalOpen:true, measuresDraft: (s.measures&&s.measures[sc]&&s.measures[sc].length)? s.measures[sc].join('\n') : pre, confirmMsg:'' })); }
+  closeConfirm(){ this.setState({ confirmModalOpen:false }); }
+  onMeasuresDraft(e){ this.setState({ measuresDraft:e.target.value }); }
+  onConfirmMsg(e){ this.setState({ confirmMsg:e.target.value }); }
+  confirmAnomaly(){
+    const S=this.state; const sc=S.scope;
+    const lines=(S.measuresDraft||'').split('\n').map(t=>t.trim()).filter(Boolean);
+    if(!lines.length) return;
+    const note=(S.confirmMsg||'').trim();
+    const body=(note?note+'\n\n':'')+'Confirmed measures:\n'+lines.map(l=>'• '+l).join('\n');
+    this.setState(s=>{
+      const th={...(s.threads||{})}; let msgs=(th[sc]||[]).map(m=> (m.kind==='report')?{...m, report:{...m.report, decided:true, outcome:'approve'}}:m );
+      msgs=msgs.filter(m=> m.kind!=='reply');
+      msgs.push({ id:Date.now(), from:'bernd', kind:'reply', outcome:'approve', text:body, time:this.now() });
+      th[sc]=msgs;
+      const cs={...(s.caseStatus||{})}; cs[sc]='approve';
+      const mm={...(s.measures||{})}; mm[sc]=lines;
+      const rd={...(s.readMap||{})}; rd[sc]=(rd[sc]||0);
+      return { threads:th, caseStatus:cs, measures:mm, decision:'approve', confirmModalOpen:false, measuresDraft:'', confirmMsg:'' };
+    });
+    this.navTo({ scope:sc, fModule:this.state.fModule, pModule:'customer', anomAlert:null }, { msgPlant:sc });
+  }
+  onDraft(e){ this.setState({ draft: e.target.value }); }
+  onKey(e){ if(e.key === 'Enter'){ e.preventDefault(); this.send(); } }
+  send(){ const t = (this.state.draft || '').trim(); if(t) this.ask(t); }
+  ask(t){
+    this.setState(s => ({ messages: [...s.messages, { u: true, t }], draft: '', typing: true, copilotOpen: true }));
+    const reply = this.replyFor(t);
+    setTimeout(() => this.setState(s => ({ messages: [...s.messages, { u: false, t: reply }], typing: false })), 650);
+  }
+  replyFor(x){
+    const t = x.toLowerCase();
+    if(/shut ?down|switch off|stop|turn off/.test(t)) return 'No, an immediate shutdown is not required. Methane (47.6%) is below target, but temperature and pressure are stable. First review feedstock moisture and the latest lab sample within 24 h.';
+    if(/methane/.test(t)) return 'Methane has dropped from ~62% to 47.6% since this morning — below the normal threshold of 52%. Common cause: a change in feedstock composition or a delayed biological response.';
+    if(/h2s|h₂s|sulph|sulf/.test(t)) return 'H₂S is at 940 ppm and moving toward the warning range (800–1000 ppm). Together with the methane drop this points to a biological / gas-quality issue.';
+    if(/\bph\b|acid/.test(t)) return 'pH is at 6.7 — just below the stable range (6.8–7.5). Combined with the methane drop, this hints at early biological instability.';
+    if(/score|0\.84|model|isolation|why/.test(t)) return 'The anomaly score 0.84 comes from the Isolation Forest model. The combination of low methane, rising H₂S and slightly low pH is unusual versus normal operation. Above 0.7 an expert review is triggered automatically.';
+    if(/recommend|action|do|next|step/.test(t)) return 'Recommended steps: 1) Review the latest lab sample, 2) Check feedstock batch notes, 3) Monitor the Digester 2 trend. All recommendations are approved by OEKOBIT experts.';
+    if(/report|month/.test(t)) return 'The June draft is ready: avg methane 57.2%, availability 98.6%, 12 alerts (10 resolved). It is awaiting expert approval before going to the customer.';
+    if(/plant|fleet|attention|which/.test(t)) return 'Right now only BioEnergy Saarland #03 needs attention (status: Warning, 3 open alerts). The other 4 plants are running in the normal range.';
+    if(/update|customer|status/.test(t)) return 'The weekly update for BioEnergy Saarland #03 contains an active warning, so it is not auto-sendable — it is routed for expert approval. The other updates were sent automatically.';
+    return 'Based on the current data, the main finding is a methane drop with rising H₂S at BioEnergy Saarland #03. Would you like an explanation, a recommended action, or a values overview?';
+  }
+
+  chip(s, label){
+    const M = { normal:['#1E9E63','#E4F4EA','Normal'], warning:['#C6841A','#FBEFD6','Warning'], critical:['#C94A4A','#F7E4E4','Critical'], info:['#2C87B4','#E4F1FA',''], sent:['#1E9E63','#E4F4EA','Auto-sent'], review:['#C6841A','#FBEFD6','Needs review'], draft:['#2C87B4','#E4F1FA','AI draft'], done:['#1E9E63','#E4F4EA','Reviewed'], open:['#C6841A','#FBEFD6','Open'], reply:['#1E9E63','#E4F4EA','Expert reply'] };
+    const c = M[s] || M.info;
+    return { chipStyle:`display:inline-block;padding:3px 11px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.02em;color:${c[0]};background:${c[1]}`, chipLabel: label || c[2] };
+  }
+
+  outcomeChip(oc){
+    const M = { approve:['Anomaly confirmed','#1E9E63','#E4F4EA','#DCEBE4','#F2F9F5'], edit:['Recommendation adjusted','#2C87B4','#E4F1FA','#D8E9F2','#F3F9FC'], false:['False alarm','#C6841A','#FBEFD6','#F1E2C4','#FDF8EE'], data:['More data requested','#C94A4A','#F7E4E4','#F0D6D6','#FCF4F4'], closed:['Case closed','#798183','#EEF0F1','#E6E9E9','#F7F8F8'] };
+    const c = M[oc] || M.closed;
+    return { label:c[0], color:c[1], chipBg:c[2], border:c[3], bg:c[4] };
+  }
+
+  anomDef(){
+    return {
+      0:{ title:'Methane + H₂S + pH anomaly', time:'10:42', count:3, category:'Biological / gas quality', score:'0.84', scoreArc:'274 327', risk:'High', riskArc:'255 327', ruleStatus:'Warning', worst:'warning',
+        elevated:[{name:'methane_percent',label:'Methane',value:'47.6%',status:'warning',normal:'normal ≥ 52%'},{name:'h2s_ppm',label:'H₂S',value:'940 ppm',status:'warning',normal:'warning 800–1000 ppm'},{name:'ph_value',label:'pH value',value:'6.7',status:'warning',normal:'stable 6.8–7.5'}],
+        interpTitle:'Methane output is below the expected range',
+        interp:'OEKOBIT detected a methane drop while H₂S is rising and pH is slightly low. Taken together, these three deviations are consistent with a biological / gas-quality issue — typically a feedstock composition change or a delayed biological response.',
+        rec:'Review feedstock moisture and the latest lab sample within 24 h.',
+        actions:['Review latest lab sample','Check feedstock batch notes','Monitor Digester 2 trend'],
+        explain:'The model detected an unusual pattern: methane dropped below the normal range while H₂S moves toward the warning level and pH is slightly low. Similar cases were linked to feedstock composition changes or a delayed biological response.' },
+      3:{ title:'Compressor + H₂S anomaly', time:'09:15', count:2, category:'Equipment / gas quality', score:'0.73', scoreArc:'238 327', risk:'Medium', riskArc:'196 327', ruleStatus:'Warning', worst:'warning',
+        elevated:[{name:'compressor_vibration',label:'Compressor vibration',value:'6.2 mm/s',status:'warning',normal:'normal 1–5 mm/s'},{name:'h2s_ppm',label:'H₂S',value:'820 ppm',status:'warning',normal:'warning 800–1000 ppm'}],
+        interpTitle:'Compressor vibration and H₂S are both elevated',
+        interp:'The compressor vibration exceeds the normal range while H₂S is rising. Combined, this points to an equipment / gas-quality issue — most likely mechanical wear on the compressor together with reduced desulphurisation performance.',
+        rec:'Schedule a compressor inspection and check the desulphurisation stage within 48 h.',
+        actions:['Inspect compressor bearings','Check desulphurisation media','Review maintenance log'],
+        explain:'The model flagged elevated compressor vibration together with rising H₂S. This co-occurrence is typical of mechanical wear combined with reduced gas cleaning; an equipment inspection is recommended.' }
+    };
+  }
+
+  renderVals(){
+    const S = this.state, adv = S.level === 'advanced', client = S.role === 'client';
+    const isFleet = S.scope === 'fleet';
+    const seg = on => `padding:7px 15px;border:0;border-radius:8px;font:inherit;font-size:13px;cursor:pointer;transition:all .15s;${on?'background:#fff;color:#576164;box-shadow:0 1px 3px rgba(0,0,0,.12);font-weight:600':'background:transparent;color:#8B9294;font-weight:400'}`;
+    const filt = on => `border:1px solid ${on?'#B9DDEF':'#E4E7E8'};background:${on?'#E4F1FA':'#fff'};color:${on?'#2C87B4':'#8B9294'};border-radius:18px;padding:6px 14px;font:inherit;font-size:12.5px;font-weight:${on?600:400};cursor:pointer;transition:all .15s`;
+    const navBase = 'display:flex;align-items:center;gap:11px;width:100%;text-align:left;border:0;border-radius:10px;padding:8px 12px;cursor:pointer;font:inherit;transition:all .15s;';
+    const uRow = a => `display:flex;align-items:center;gap:10px;width:100%;border:1px solid ${a?'#BFE0F0':'#EDEFF0'};background:${a?'#EAF5FB':'#fff'};border-radius:11px;padding:9px 10px;cursor:pointer;font:inherit`;
+    const uAv = (a,c) => `width:32px;height:32px;border-radius:50%;background:${a?c:'#F0F1F1'};color:${a?'#fff':'#798183'};display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700;flex:none`;
+    const navOn = 'background:#EAF3F9;box-shadow:inset 3px 0 0 #38A4D4;color:#1B4A5E;', navOff = 'background:transparent;color:#818A8C;';
+
+    const rawPlants = [
+      { name:'Hofgut Losheim', loc:'Losheim am See · Saarland', status:'warning', dot:'#C6841A', methane:'47.6%', h2s:'940 ppm', gas:'512 m³/h', alerts:3, ph:'6.7', temp:'39.5', pressure:'1.26', co2:'44.8', o2:'0.11', feedstock:'Maize + slurry', season:'Summer', maint:'Recent', trend:'24,72 96,62 168,68 240,58 312,96 384,150 456,162', trendColor:'#C94A4A' },
+      { name:'Bliestal Bioenergie', loc:'Blieskastel · Saarland', status:'normal', dot:'#1E9E63', methane:'62.1%', h2s:'480 ppm', gas:'624 m³/h', alerts:0, ph:'7.2', temp:'41.0', pressure:'1.28', co2:'38.0', o2:'0.08', feedstock:'Maize + slurry', season:'Summer', maint:'None', trend:'24,64 96,60 168,66 240,58 312,62 384,60 456,66', trendColor:'#1E9E63' },
+      { name:'Prims-Energie', loc:'Wadern · Saarland', status:'normal', dot:'#1E9E63', methane:'60.3%', h2s:'520 ppm', gas:'590 m³/h', alerts:0, ph:'7.1', temp:'40.2', pressure:'1.22', co2:'39.1', o2:'0.09', feedstock:'Manure + grass', season:'Summer', maint:'None', trend:'24,70 96,66 168,64 240,68 312,62 384,66 456,64', trendColor:'#1E9E63' },
+      { name:'Saargau Biogas', loc:'Merzig · Saarland', status:'warning', dot:'#C6841A', methane:'57.5%', h2s:'820 ppm', gas:'505 m³/h', alerts:2, ph:'7.0', temp:'41.5', pressure:'1.27', co2:'40.0', o2:'0.10', vib:'6.2', feedstock:'Bio-waste', season:'Summer', maint:'Overdue', trend:'24,66 96,64 168,66 240,62 312,66 384,64 456,66', trendColor:'#C6841A' },
+      { name:'Köllertal Biomethan', loc:'Püttlingen · Saarland', status:'normal', dot:'#1E9E63', methane:'58.4%', h2s:'610 ppm', gas:'546 m³/h', alerts:0, ph:'7.0', temp:'40.8', pressure:'1.25', co2:'40.2', o2:'0.10', feedstock:'Maize + slurry', season:'Summer', maint:'None', trend:'24,72 96,68 168,66 240,70 312,66 384,68 456,66', trendColor:'#1E9E63' }
+    ];
+    const CS = S.caseStatus || {};
+    const anomResolved = i => CS[i] === 'false';
+    const plants = rawPlants.map((p,i) => { const res = anomResolved(i); const al = res?0:p.alerts; const st = res?'normal':p.status; const dot = res?'#1E9E63':p.dot; return { name:p.name, loc:p.loc, dot, methane:p.methane, h2s:p.h2s, gas:p.gas, alertsLabel: al ? (al+(al>1?' alerts':' alert')) : '—', onClick: () => this.enterPlant(i), ...this.chip(st) }; });
+
+    const pIdx = isFleet ? 0 : S.scope;
+    const P = rawPlants[pIdx];
+    const scopePlant = { name:P.name, loc:P.loc, dot:anomResolved(pIdx)?'#1E9E63':P.dot, trend:P.trend, trendColor:P.trendColor, ...this.chip(anomResolved(pIdx)?'normal':P.status) };
+    const plantHasAlert = P.alerts > 0 && !anomResolved(pIdx), plantNoAlert = !isFleet && S.pModule==='anomaly' && S.anomAlert===null && (P.alerts===0 || anomResolved(pIdx));
+    const ANOM = this.anomDef(); const A = ANOM[pIdx] || null;
+
+    // ── module resolution ──
+    const inDetail = !isFleet && S.pModule==='anomaly' && S.anomAlert!==null;
+    const vFleetOverview = isFleet && S.fModule==='overview';
+    const vFleetAnomaly  = isFleet && S.fModule==='anomaly';
+    const vFleetReport   = isFleet && S.fModule==='report';
+    const vFleetCustomer = isFleet && S.fModule==='customer';
+    const vPlantDash     = !isFleet && S.pModule==='dashboard';
+    const vPlantAnomList = !isFleet && S.pModule==='anomaly' && S.anomAlert===null;
+    const vAnomClient    = inDetail && client;
+    const vAnomExpert    = inDetail && !client;
+    const vPlantCustomer = !isFleet && S.pModule==='customer';
+    const vCustomer = vFleetCustomer || vPlantCustomer;
+
+    // ── titles ──
+    let title, subtitle, plantName;
+    if(vFleetOverview){ title='Fleet Dashboard'; subtitle='SMARTCONTROL fleet overview · 5 plants'; }
+    else if(vFleetAnomaly){ title='Anomaly Detection'; subtitle='Fleet-wide · filter by plant'; }
+    else if(vFleetReport){ title='Monthly Report'; subtitle='AI-assisted reporting · June 2026'; }
+    else if(vFleetCustomer){ if(S.msgPlant!=null){ const mp=S.msgPlant; if(mp==='ai'){ title='Messages — Plant Colleague'; subtitle='Agentic AI assistant'; } else { const mpName = mp==='general' ? ((S.subjects||{})['general']||'General inquiry') : ((S.subjects||{})[mp] || (this.anomDef()[mp]?this.anomDef()[mp].title:(rawPlants[mp]?rawPlants[mp].name:''))); title='Messages — '+mpName; subtitle=client?'Conversation with your OEKOBIT expert':'Conversation with Julia User'; } } else { title='Messages'; subtitle='All conversations'; } }
+    else if(vPlantDash){ title=P.name; subtitle=P.loc; }
+    else if(vPlantAnomList){ title='Anomaly Detection — '+P.name; subtitle=P.alerts?'Active alerts for this plant':'No active alerts'; }
+    else if(inDetail){ title=(A?A.title:'Anomaly')+' — '+P.name; subtitle='Detailed analysis · '+(client?'Julia User · Operator':'Bernd Biogas · OEKOBIT Expert'); }
+    else if(vPlantCustomer){ title='Messages — '+P.name; subtitle=client?'Conversation with your OEKOBIT expert':'Conversation with Julia User'; }
+    plantName = isFleet ? 'Scheer Energy GmbH · Fleet' : P.name;
+
+    // ── FLEET overview ──
+    const totalGas = rawPlants.reduce((s,p)=>s+parseInt(p.gas),0);
+    const fleetKpis = [
+      { label:'Plants online', value:'5 / 5', color:'#1E9E63', hint:'All plants reporting data' },
+      { label:'Total gas flow', value: totalGas.toLocaleString('en-US'), color:'#576164', hint:'m³/h across the fleet' },
+      { label:'Active alerts', value: String(rawPlants.reduce((s,p,i)=>s+(anomResolved(i)?0:p.alerts),0)), color:'#C6841A', hint: rawPlants.filter((p,i)=>p.alerts>0&&!anomResolved(i)).length+' plants affected' }
+    ];
+    if(adv) fleetKpis.push({ label:'Availability', value:'98.6%', color:'#1E9E63', hint:'30-day average' }, { label:'Data quality', value:'89%', color:'#576164', hint:'Fleet average' });
+    const pillars = [
+      { name:'Biogas Production', desc:'Fermentation & feedstock', value:'5 digesters active', bar:'linear-gradient(180deg,#95C11F,#00BE74)' },
+      { name:'Biogas Processing', desc:'Desulphurisation & drying', value:'620 ppm H₂S avg', bar:'linear-gradient(180deg,#00BE74,#00B1B3)' },
+      { name:'Biogas Injection', desc:'Compression & grid', value:'1.26 bar', bar:'linear-gradient(180deg,#00A7C6,#38A4D4)' }
+    ];
+
+    // ── FLEET anomaly (affected plants only) ──
+    const filterList = [{ text:'All plants', val:'all' }].concat(rawPlants.map((p,i)=>({ text:p.name.replace('BioEnergy ','').replace('Hof-Biogas ',''), val:i })));
+    const affected = rawPlants.map((p,i)=>({p,i})).filter(x=>x.p.alerts>0 && !anomResolved(x.i));
+    const anomFilterList = [{ text:'All plants', val:'all' }].concat(affected.map(({p,i})=>({ text:p.name.replace('BioEnergy ','').replace('Hof-Biogas ',''), val:i })));
+    const anomFilterChips = anomFilterList.map(f => ({ text:f.text, onClick:()=>this.setState({ anomFilter:f.val }), style: filt(String(S.anomFilter)===String(f.val)) }));
+    let affShown = affected;
+    if(S.anomFilter!=='all') affShown = affected.filter(x=>String(x.i)===String(S.anomFilter));
+    const anomalyRows = affShown.map(({p,i}) => { const a=ANOM[i]; const oc=CS[i]?this.outcomeChip(CS[i]):null; return {
+      name:p.name, dot:p.dot, hasAlert:true, hasOutcome:!!oc, outcomeLabel:oc?oc.label:'', outcomeStyle:oc?('display:inline-block;font-size:11px;font-weight:600;border-radius:20px;padding:4px 11px;color:'+oc.color+';background:'+oc.chipBg):'',
+      detail: a ? (a.count+' elevated values · '+a.category+' · '+a.time) : (p.alerts+' active alerts'),
+      border:'#F1E2C4', bg:'#FDF8EE',
+      onView: () => this.navTo({ scope:i, fModule:'overview', pModule:'anomaly', anomAlert:null }),
+      ...this.chip(p.status)
+    }; });
+    const totalAlerts = rawPlants.reduce((s,p,i)=>s+(anomResolved(i)?0:p.alerts),0);
+    const showFleetAnomBadge = totalAlerts>0; const fleetAnomBadge = String(totalAlerts);
+    const TH0 = S.threads||{}, CS0 = S.caseStatus||{};
+    const awaitingReview = rawPlants.reduce((n,p,i)=>{ if(anomResolved(i)) return n; const th=TH0[i]||[]; const hasReport=th.some(m=>m.kind==='report'); const decided=!!CS0[i]; return n + (hasReport && !decided ? 1 : 0); },0);
+    const anomSummary = [
+      { label:'Plants affected', value: String(S.anomFilter==='all'?affected.length:affShown.length), color:'#C6841A' },
+      { label:'Active alerts', value: String(S.anomFilter==='all'?totalAlerts:(rawPlants[S.anomFilter]?rawPlants[S.anomFilter].alerts:0)), color:'#C6841A' },
+      { label:'Awaiting review', value:String(awaitingReview), color:'#2C87B4' }
+    ];
+
+    // ── REPORT ──
+    const reportScopeList = [{ text:'Consolidated fleet', val:'all' }].concat(rawPlants.map((p,i)=>({ text:p.name.replace('BioEnergy ','').replace('Hof-Biogas ',''), val:i })));
+    const reportScopeChips = reportScopeList.map(f => ({ text:f.text, onClick:()=>this.setState({ reportScope:f.val, reportNote:'' }), style: filt(String(S.reportScope)===String(f.val)) }));
+    let reportTitle, reportScopeLabel, reportKpis;
+    if(S.reportScope==='all'){
+      reportTitle='Monthly Report — June 2026'; reportScopeLabel='Scope: consolidated fleet (5 plants)';
+      reportKpis=[{label:'Avg methane',value:'57.2%',hint:'Prev. month 58.1%'},{label:'Availability',value:'98.6%',hint:'Target 97%'},{label:'Alerts',value:'12',hint:'10 resolved'},{label:'Gas delivered',value:'1.79',hint:'M m³'}];
+    } else {
+      const rp=rawPlants[S.reportScope]; reportTitle='Monthly Report — '+rp.name; reportScopeLabel='Scope: single plant';
+      reportKpis=[{label:'Avg methane',value:rp.methane,hint:'June average'},{label:'Availability',value:'98.9%',hint:'Target 97%'},{label:'Alerts',value:String(rp.alerts),hint:rp.alerts?'open':'none this month'},{label:'Gas delivered',value:'0.37',hint:'M m³'}];
+    }
+    const reportSections = [
+      { title:'Alert history', body:'12 alerts in June — 8 warnings and 2 critical. Most frequent cause: short H₂S spikes after feedstock changes.', ...this.chip('draft') },
+      { title:'Expert comments', body:'Awaiting approval. The reviewer adds context on the ongoing methane anomaly at Plant_01 before delivery.', ...this.chip('open') },
+      { title:'Recommendations', body:'Tighten feedstock monitoring and adjust desulphurisation according to the H₂S trend.', ...this.chip('draft') }
+    ];
+    const reportStats = [
+      { name:'methane_percent', min:'47.6', avg:'57.2', max:'63.4', unit:'%' },{ name:'h2s_ppm', min:'340', avg:'620', max:'980', unit:'ppm' },
+      { name:'ph_value', min:'6.7', avg:'7.1', max:'7.4', unit:'—' },{ name:'temperature_c', min:'37.8', avg:'41.2', max:'44.0', unit:'°C' },
+      { name:'gas_flow_m3_h', min:'458', avg:'572', max:'640', unit:'m³/h' },{ name:'pressure_bar', min:'1.08', avg:'1.24', max:'1.42', unit:'bar' }
+    ];
+
+    // ── MESSAGES (inbox + per-plant conversation) ──
+    const threads = S.threads||{}, threadsClosed = S.threadsClosed||{}, readMap = S.readMap||{}, caseStatus = S.caseStatus||{};
+    const msgPlant = (S.msgPlant==null)?null:S.msgPlant;
+    const inThread = msgPlant!=null;
+    const previewOf = (msgs)=>{ if(!msgs.length) return {txt:'No messages yet', muted:true}; const l=msgs[msgs.length-1]; if(l.kind==='report') return {txt:'Review request · '+l.report.title}; if(l.kind==='reply') return {txt:'Bernd: '+l.text}; return {txt:(l.from==='julia'?'Julia: ':'Bernd: ')+l.text}; };
+    const convList = rawPlants.map((p,i)=>{
+      const msgs=threads[i]||[]; const pv=previewOf(msgs); const last=msgs[msgs.length-1];
+      const unread=msgs.slice(readMap[i]||0).filter(m=>(m.from==='julia')!==client).length;
+      const st=caseStatus[i]; const stChip = st?this.outcomeChip(st):null;
+      const def=this.anomDef()[i]; const subj=(S.subjects||{})[i]; const convName = subj || (def ? def.title : p.name);
+      return { pi:i, name:convName, subName:p.name, hasMsgs:msgs.length>0 || !!subj, preview:pv.txt, previewColor: pv.muted?'#B7BDBE':'#8B9294', time:last?last.time:'',
+        unread, showUnread:unread>0,
+        hasStatus:!!stChip, statusLabel: stChip?stChip.label:'', statusChipStyle: stChip?`display:inline-block;font-size:10.5px;font-weight:600;border-radius:20px;padding:3px 10px;color:${stChip.color};background:${stChip.chipBg}`:'',
+        onOpen:()=>this.openThreadView(i),
+        rowStyle:`display:flex;align-items:center;gap:14px;width:100%;text-align:left;border:1px solid ${unread>0?'#D8E9F2':'#ECEEEF'};background:${unread>0?'#F7FBFD':'#fff'};border-radius:14px;padding:15px 17px;cursor:pointer;font:inherit`,
+        avStyle:`width:40px;height:40px;border-radius:50%;background:${p.dot==='#C6841A'?'#FBEFD6':'#EEF3F5'};color:${p.dot==='#C6841A'?'#C6841A':'#7C9AA5'};display:flex;align-items:center;justify-content:center;font-size:13.5px;font-weight:700;flex:none`,
+        avInit: p.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(),
+        unreadStyle:'min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:#2C87B4;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none' };
+    });
+    const gMsgs = threads['general']||[];
+    if(gMsgs.length){
+      const gpv=previewOf(gMsgs); const glast=gMsgs[gMsgs.length-1];
+      const gUnread=gMsgs.slice(readMap['general']||0).filter(m=>(m.from==='julia')!==client).length;
+      convList.push({ pi:'general', name:(S.subjects||{})['general']||'General inquiry', subName:'General inquiry · OEKOBIT', hasMsgs:true, preview:gpv.txt, previewColor:gpv.muted?'#B7BDBE':'#8B9294', time:glast?glast.time:'', unread:gUnread, showUnread:gUnread>0, hasStatus:false, statusLabel:'', statusChipStyle:'', onOpen:()=>this.openThreadView('general'), rowStyle:`display:flex;align-items:center;gap:14px;width:100%;text-align:left;border:1px solid ${gUnread>0?'#D8E9F2':'#ECEEEF'};background:${gUnread>0?'#F7FBFD':'#fff'};border-radius:14px;padding:15px 17px;cursor:pointer;font:inherit`, avStyle:'width:40px;height:40px;border-radius:50%;background:#EEF3F5;color:#7C9AA5;display:flex;align-items:center;justify-content:center;font-size:13.5px;font-weight:700;flex:none', avInit:'GA', unreadStyle:'min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:#2C87B4;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none' });
+    }
+    convList.sort((a,b)=>(b.hasMsgs?1:0)-(a.hasMsgs?1:0));
+    const inboxListBase = convList.filter(c=>c.hasMsgs);
+    const aiMsgsArr = S.messages||[];
+    const aiEngaged = client && aiMsgsArr.length>1;
+    const aiLastMsg = aiMsgsArr[aiMsgsArr.length-1];
+    const aiConv = aiEngaged ? {
+      pi:'ai', name:'Plant Colleague', subName:'Agentic AI · always available', hasMsgs:true,
+      preview:(aiLastMsg?(aiLastMsg.u?'You: ':'')+aiLastMsg.t:''), previewColor:'#8B9294', time:'',
+      unread:0, showUnread:false, hasStatus:true, statusLabel:'AI assistant',
+      statusChipStyle:'display:inline-block;font-size:10.5px;font-weight:600;border-radius:20px;padding:3px 10px;color:#1E7F53;background:#E4F4EA',
+      onOpen:()=>this.openThreadView('ai'),
+      rowStyle:'display:flex;align-items:center;gap:14px;width:100%;text-align:left;border:1px solid #DDEEE4;background:#F6FBF8;border-radius:14px;padding:15px 17px;cursor:pointer;font:inherit',
+      avStyle:'width:40px;height:40px;border-radius:50%;background:#E2F3E9;color:#1E9E63;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;flex:none',
+      avInit:'PC', unreadStyle:''
+    } : null;
+    const inboxList = aiConv ? [aiConv, ...inboxListBase] : inboxListBase;
+    const inboxEmpty = inboxList.length===0;
+    const composeOpen = !!S.composeOpen;
+    // ── compose: subject + target (general / plant) + topic suggestions ──
+    const composeTarget = S.composeTarget || 'general';
+    const targetRow = (val, name, sub, avInit, avBg, avColor) => { const sel = String(composeTarget)===String(val); return { val, name, sub, avInit,
+      avStyle:`width:34px;height:34px;border-radius:50%;background:${avBg};color:${avColor};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex:none`,
+      rowStyle:`display:flex;align-items:center;gap:11px;width:100%;text-align:left;border:1px solid ${sel?'#B9DDEF':'#ECEEEF'};background:${sel?'#EAF5FB':'#fff'};border-radius:11px;padding:9px 11px;cursor:pointer;font:inherit`,
+      dot: sel, dotStyle:`width:18px;height:18px;border-radius:50%;border:1.5px solid ${sel?'#2C87B4':'#D4D8D9'};background:${sel?'#2C87B4':'#fff'};color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;flex:none`,
+      onPick:()=>this.setState({composeTarget:val}) }; };
+    const composeTargets = [ targetRow('general','General inquiry','Not tied to a specific plant','GA','#EEF3F5','#7C9AA5') ]
+      .concat(rawPlants.map((p,i)=>targetRow(i, p.name, p.loc, p.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(), p.dot==='#C6841A'?'#FBEFD6':'#EEF3F5', p.dot==='#C6841A'?'#C6841A':'#7C9AA5')));
+    const topicSuggestions = ['Anomaly interpretation','Feedstock / substrate change','Maintenance planning','Lab sample results','General question'];
+    const composeTopics = topicSuggestions.map(t=>{ const active=(S.composeSubject||'')===t; return { text:t, active,
+      style:`border:1px solid ${active?'#B9DDEF':'#E4E7E8'};background:${active?'#E4F1FA':'#fff'};color:${active?'#2C87B4':'#8B9294'};border-radius:18px;padding:6px 13px;font:inherit;font-size:12.5px;font-weight:${active?600:400};cursor:pointer`,
+      onPick:()=>this.setState({composeSubject:t}) }; });
+    const composeSubject = S.composeSubject||'';
+    const composeCanStart = composeSubject.trim().length>0;
+    const startBtnStyle = `border:0;border-radius:10px;padding:10px 20px;font:inherit;font-size:13px;font-weight:600;color:#fff;background:${composeCanStart?'#2C87B4':'#CBD3D4'};cursor:${composeCanStart?'pointer':'not-allowed'}`;
+    const tp = inThread ? rawPlants[msgPlant] : null;
+    const tmsgs = inThread ? (threads[msgPlant]||[]) : [];
+    const threadEmpty = tmsgs.length===0;
+    const threadMsgs = tmsgs.map(m=>{
+      const mine = (m.from==='julia') === client;
+      const who = m.from==='julia'?'Julia User':'Bernd Biogas';
+      const avBg = m.from==='julia'?'#2C87B4':'#C6841A';
+      const isStat = m.kind==='status'||m.kind==='reply';
+      const base = {
+        id:m.id, from:m.from, mine, initials: m.from==='julia'?'JU':'BB', align: mine?'flex-end':'flex-start',
+        rowStyle:`display:flex;gap:10px;align-items:flex-start;${mine?'flex-direction:row-reverse':''}`,
+        showAv: !mine, avStyle:`width:30px;height:30px;border-radius:50%;background:${avBg};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex:none;margin-top:2px`,
+        metaLine: (mine?'':who+' · ')+m.time,
+        isText:m.kind==='text', isReport:m.kind==='report', isStatus:isStat, isFile:m.kind==='file'
+      };
+      if(m.kind==='file'){ base.fileName=m.fileName; base.fileSize=m.fileSize; base.fileBubbleStyle=`display:flex;align-items:center;gap:11px;background:${mine?'#2C87B4':'#fff'};color:${mine?'#fff':'#576164'};border:1px solid ${mine?'#2C87B4':'#E9ECEC'};border-radius:14px;${mine?'border-bottom-right-radius:4px':'border-bottom-left-radius:4px'};padding:10px 13px;max-width:280px`; base.fileIconColor=mine?'#fff':'#2C87B4'; base.fileIconBg=mine?'rgba(255,255,255,.18)':'#EAF3F9'; }
+      if(m.kind==='text'){ base.text=m.text; base.bubbleStyle=`background:${mine?'#2C87B4':'#fff'};color:${mine?'#fff':'#576164'};border:1px solid ${mine?'#2C87B4':'#E9ECEC'};border-radius:14px;${mine?'border-bottom-right-radius:4px':'border-bottom-left-radius:4px'};padding:11px 14px;font-size:13.5px;line-height:1.5`; }
+      if(m.kind==='report'){ const r=m.report; base.rTitle=r.title; base.rSummary=r.summary; base.rNote=r.note; base.rPlant=rawPlants[r.pi]?rawPlants[r.pi].name:''; base.onOpen=()=>this.openReport(r.pi,r.ai); base.rCta=client?'Open the analysis':'Open in expert view'; const dec=r.decided; base.rBadge=dec?'Reviewed':'Awaiting review'; base.rBadgeStyle=`font-size:10px;font-weight:600;border-radius:20px;padding:3px 9px;color:${dec?'#1E9E63':'#C6841A'};background:${dec?'#E4F4EA':'#FBEFD6'}`; }
+      if(isStat){ base.text=m.text; const oc=this.outcomeChip(m.outcome); base.stLabel=oc.label; base.stBorder=oc.border; base.stBg2=oc.bg; base.stChipStyle=`display:inline-block;font-size:10.5px;font-weight:600;border-radius:20px;padding:3px 11px;color:${oc.color};background:${oc.chipBg}`; }
+      return base;
+    });
+    const threadClosed = inThread ? !!threadsClosed[msgPlant] : false;
+    const totalUnread = convList.reduce((n,c)=>n+c.unread,0);
+    const custBadge = String(totalUnread); const showCustBadge = totalUnread>0;
+    const showInbox = vCustomer && !inThread; const showThread = vCustomer && inThread;
+    const showInboxBack = inThread && isFleet;
+    const caseWith = client ? 'Bernd Biogas' : 'Julia User';
+    const caseAvInit = client ? 'BB' : 'JU'; const caseAvBg = client ? '#C6841A' : '#2C87B4';
+    const isGeneral = msgPlant==='general';
+    const tSubj = (S.subjects||{})[msgPlant];
+    const tDef = (!isGeneral && msgPlant!=null) ? this.anomDef()[msgPlant] : null;
+    const threadTitle = isGeneral ? (tSubj||'General inquiry') : (tSubj || (tDef?tDef.title:(tp?tp.name:'')));
+    const threadPartner = client ? 'Bernd Biogas · OEKOBIT process expert' : 'Julia User · Scheer Energy operator';
+    const threadSub = (isGeneral ? 'General inquiry' : (tp?tp.name:'')) + ' · with ' + threadPartner;
+    const caseStatusLabel = threadClosed?'Closed':'Open';
+    const caseStatusStyle = `font-size:11px;font-weight:600;border-radius:20px;padding:4px 12px;color:${threadClosed?'#798183':'#1E9E63'};background:${threadClosed?'#EEF0F1':'#E4F4EA'}`;
+    const showClose = !client && !threadClosed && tmsgs.length>0;
+    const emptyTitle = client ? 'No messages yet' : 'No requests yet';
+    const emptySub = client ? (isGeneral ? 'Send a message or attach a file for your OEKOBIT expert.' : 'Send a message about this plant to your OEKOBIT expert, or submit an anomaly for review from the analysis view.') : 'Messages and review requests from Julia User will appear here.';
+    const composerPlaceholder = client ? 'Write a message…' : 'Reply to Julia User…';
+    const sendDisabled = !(S.threadDraft && S.threadDraft.trim());
+    const sendBtnStyle = `border:0;width:42px;height:42px;border-radius:11px;flex:none;display:flex;align-items:center;justify-content:center;cursor:${sendDisabled?'not-allowed':'pointer'};background:${sendDisabled?'#CBD3D4':'#2C87B4'}`;
+
+    // ── Plant Colleague (AI) conversation surfaced in Messages ──
+    const isAI = msgPlant==='ai';
+    const aiThreadMsgs = (S.messages||[]).map((x,idx)=>{ const mine=x.u; return {
+      id:'ai'+idx, mine, initials:'PC', align:mine?'flex-end':'flex-start', showAv:!mine,
+      rowStyle:`display:flex;gap:10px;align-items:flex-start;${mine?'flex-direction:row-reverse':''}`,
+      avStyle:`width:30px;height:30px;border-radius:50%;background:#E2F3E9;color:#1E9E63;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex:none;margin-top:2px`,
+      metaLine:(mine?'':'Plant Colleague'), isText:true, isReport:false, isStatus:false, isFile:false, text:x.t,
+      bubbleStyle:`background:${mine?'#2C87B4':'#F2F5F4'};color:${mine?'#fff':'#576164'};border:1px solid ${mine?'#2C87B4':'#E9ECEC'};border-radius:14px;${mine?'border-bottom-right-radius:4px':'border-bottom-left-radius:4px'};padding:11px 14px;font-size:13.5px;line-height:1.5`
+    }; });
+    const fThreadMsgs = isAI ? aiThreadMsgs : threadMsgs;
+    const fThreadEmpty = isAI ? aiThreadMsgs.length===0 : threadEmpty;
+    const fThreadTitle = isAI ? 'Plant Colleague' : threadTitle;
+    const fThreadSub = isAI ? 'Agentic AI · always available' : threadSub;
+    const fCaseAvInit = isAI ? 'PC' : caseAvInit;
+    const fCaseAvBg = isAI ? '#1E9E63' : caseAvBg;
+    const fCaseStatusLabel = isAI ? 'Assistant' : caseStatusLabel;
+    const fCaseStatusStyle = isAI ? 'font-size:11px;font-weight:600;border-radius:20px;padding:4px 12px;color:#1E7F53;background:#E4F4EA' : caseStatusStyle;
+    const fShowClose = isAI ? false : showClose;
+    const fComposerPlaceholder = isAI ? 'Ask the Plant Colleague…' : composerPlaceholder;
+    const showAttach = !isAI;
+    const aiTyping = isAI && !!S.typing;
+
+    // ── anomaly detail: linked expert conversation + outcome status ──
+    const anomOutcome = CS[pIdx] ? this.outcomeChip(CS[pIdx]) : null;
+    const anomHasStatus = !!anomOutcome;
+    const anomStatusLabel = anomOutcome ? anomOutcome.label : '';
+    const anomStatusStyle = anomOutcome ? `font-size:11px;font-weight:600;color:${anomOutcome.color};background:${anomOutcome.chipBg};border-radius:20px;padding:5px 13px` : '';
+    const anomThreadRaw = threads[pIdx] || [];
+    const anomThread = anomThreadRaw.map(m=>{
+      const mine = (m.from==='julia') === client;
+      const who = m.from==='julia'?'Julia User':'Bernd Biogas';
+      const avBg = m.from==='julia'?'#2C87B4':'#C6841A';
+      const isStat = m.kind==='status'||m.kind==='reply';
+      const b = { id:m.id, mine, initials:m.from==='julia'?'JU':'BB', align:mine?'flex-end':'flex-start', showAv:!mine,
+        rowStyle:`display:flex;gap:10px;align-items:flex-start;${mine?'flex-direction:row-reverse':''}`,
+        avStyle:`width:28px;height:28px;border-radius:50%;background:${avBg};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;flex:none;margin-top:2px`,
+        metaLine:(mine?'':who+' · ')+m.time, isStatus:isStat, hasStChip:false, stLabel:'', stChipStyle:'' };
+      if(isStat){ b.text=m.text; const oc=this.outcomeChip(m.outcome); b.hasStChip=true; b.stLabel=oc.label; b.stChipStyle=`display:inline-block;font-size:10px;font-weight:600;border-radius:20px;padding:3px 10px;color:${oc.color};background:${oc.chipBg};margin-bottom:6px`; }
+      else if(m.kind==='report'){ b.text='Sent this anomaly to '+(mine?'the expert':'you')+' for review.'; }
+      else { b.text=m.text; }
+      b.bubbleStyle=`background:${mine?'#2C87B4':'#F4F7F8'};color:${mine?'#fff':'#576164'};border-radius:13px;padding:10px 13px;font-size:13px;line-height:1.5;max-width:100%`;
+      return b;
+    });
+    const anomHasThread = anomThread.length>0;
+    const openAnomInMessages = ()=>{ this.setState({scope:'fleet', fModule:'customer'}, ()=>this.openThreadView(pIdx)); };
+
+    // ── plant detail data ──
+    const plantStatusText = anomResolved(pIdx) ? P.loc+' · anomaly cleared by expert (false alarm)' : P.loc;
+    const plantKpis = [
+      { label:'Plant health', value:P.status==='warning'?'Warning':'Normal', color:P.status==='warning'?'#C6841A':'#1E9E63' },
+      { label:'Methane', value:P.methane, color:P.status==='warning'?'#C94A4A':'#576164' },
+      { label:'H₂S', value:P.h2s, color:'#576164' },
+      { label:'Open alerts', value:String(P.alerts), color:P.alerts?'#C6841A':'#1E9E63' }
+    ];
+    const plantExtra = [
+      { label:'pH value', value:P.ph, unit:'target 6.8–7.5', color:'#576164' },{ label:'Temperature', value:P.temp, unit:'°C', color:'#576164' },
+      { label:'Gas flow', value:P.gas.replace(' m³/h',''), unit:'m³/h', color:'#576164' },{ label:'CO₂', value:P.co2, unit:'%', color:'#576164' },
+      { label:'Oxygen', value:P.o2, unit:'%', color:'#576164' },{ label:'Pressure', value:P.pressure, unit:'bar', color:'#576164' }
+    ];
+    const plantMeta = [{ label:'Feedstock type', value:P.feedstock },{ label:'Season', value:P.season },{ label:'Maintenance status', value:P.maint },{ label:'Data quality', value:'Good' }];
+
+    // ── plant anomaly event (values grouped into one anomaly) ──
+    const anomEvOutcome = CS[pIdx] ? this.outcomeChip(CS[pIdx]) : null;
+    const anomalyEvents = A ? [{ time:A.time, category:A.category, title:A.title, summary:A.count+' elevated values · detected at '+A.time+' · '+A.category, border: A.worst==='critical'?'#F0D6D6':'#F1E2C4', bg: A.worst==='critical'?'#FBF0F0':'#FDF8EE', onClick:()=>this.openAlert(0), hasOutcome:!!anomEvOutcome, outcomeLabel:anomEvOutcome?anomEvOutcome.label:'', outcomeStyle:anomEvOutcome?`display:inline-block;font-size:11px;font-weight:600;border-radius:20px;padding:4px 11px;margin-left:8px;color:${anomEvOutcome.color};background:${anomEvOutcome.chipBg}`:'', ...this.chip(A.worst) }] : [];
+    const anomListKpis = A ? [{ label:'Anomaly score', value:A.score, color:'#38A4D4' },{ label:'Risk level', value:A.risk, color:'#C6841A' },{ label:'Elevated values', value:String(A.count), color:'#C6841A' }] : [];
+    const worstCrit = !!(A && A.worst==='critical');
+    const bannerBg = worstCrit?'#FBF0F0':'#FDF8EE', bannerBorder = worstCrit?'#F0D6D6':'#F1E2C4', bannerIconStroke = worstCrit?'#C94A4A':'#C6841A', bannerChipBg = worstCrit?'#F7E4E4':'#FBEFD6';
+
+    // ── detail (client / expert) · driven by the selected anomaly A ──
+    const elevatedCards = A ? A.elevated.map(e=>({ label:e.label, value:e.value, normal:e.normal, ...this.chip(e.status) })) : [];
+    const clientKpis = A ? [{ label:'Plant health', value:'Warning', color:'#C6841A' },{ label:'Risk level', value:A.risk, color:'#C6841A' },{ label:'Anomaly score', value:A.score, color:'#38A4D4' },{ label:'Open actions', value:String(A.actions.length), color:'#2C87B4' }] : [];
+    const clientExtra = plantExtra;
+    const chkMap = S.checkedActions||{}; const chk = chkMap[pIdx]||[];
+    const measuresArr = (S.measures||{})[pIdx] || [];
+    const hasExpertMeasures = measuresArr.length>0;
+    const taskDefs = hasExpertMeasures ? measuresArr.map((t)=>({text:t, expert:true})) : (A ? A.actions.map((t)=>({text:t, expert:false})) : []);
+    const actions = taskDefs.map((d,i)=>{ const done=chk.includes(i); return { text:d.text, showExpertTag:false, onToggle:()=>this.setState(s=>{ const m={...(s.checkedActions||{})}; const c=(m[pIdx]||[]).slice(); const k=c.indexOf(i); if(k>=0){c.splice(k,1);}else{c.push(i);} m[pIdx]=c; return {checkedActions:m}; }), rowBg: done?'#F3FAF5':(d.expert?'#FBF8F1':'#fff'), rowBorder: done?'#DCEEE3':(d.expert?'#EFE2C6':'#EEF0F1'), boxBg: done?'#1E9E63':'#fff', boxBorder: done?'#1E9E63':'#D6DADB', check: done?'✓':'', textColor: done?'#9AA1A3':'#576164', strike: done?'text-decoration:line-through':'', tagStyle:'font-size:9.5px;font-weight:700;letter-spacing:.05em;color:#B07D1E;background:#F6EBD3;border-radius:6px;padding:3px 7px;flex:none' }; });
+    const totalTasks = actions.length; const doneCount = chk.filter(i=>i<totalTasks).length;
+    const actionsDoneLabel = totalTasks ? (doneCount+' of '+totalTasks+' done') : '';
+    const actionsTitle = hasExpertMeasures ? 'Action plan' : 'Recommended actions';
+    const actionsSubtitle = hasExpertMeasures ? 'Measures confirmed by your OEKOBIT expert · check them off' : 'Work through these steps and check them off';
+    const showSendToExpert = !CS[pIdx];
+    const trust = [{ label:'Data quality', value:'82%', color:'#1E9E63' },{ label:'Expert approval', value:'Completed', color:'#1E9E63' },{ label:'Raw data sharing', value:'No external', color:'#2C87B4' },{ label:'Remote plant control', value:'Not enabled', color:'#C6841A' }];
+    const ctxQ = [['temperature_c',P.temp+' °C'],['pressure_bar',P.pressure+' bar']];
+    const alertQueue = A ? A.elevated.map(e=>({ name:e.label, value:e.value, border:e.status==='critical'?'#F0D6D6':'#F1E2C4', bg:e.status==='critical'?'#FBF0F0':'#FDF8EE', ...this.chip(e.status) })).concat(ctxQ.map(c=>({ name:c[0], value:c[1], border:'#D6ECDD', bg:'#F3FAF5', ...this.chip('normal') }))) : [];
+    const ctxVars = [['temperature_c',P.temp+' °C'],['pressure_bar',P.pressure+' bar'],['oxygen_percent',P.o2+'%'],['gas_flow_m3_h',P.gas]];
+    const variables = A ? A.elevated.map(e=>({ name:e.name, value:e.value, ...this.chip(e.status) })).concat((adv?ctxVars:ctxVars.slice(0,2)).map(c=>({ name:c[0], value:c[1], ...this.chip('normal') }))) : [];
+    const decMap = { approve:'Recommendation approved — sent to the operator and stored as a learning record.', edit:'Edit mode opened — you can adjust the recommendation before approval.', false:'Marked as false alarm — the outcome feeds back into model training.', data:'Data request sent — additional sensor data requested from the operator.' };
+
+    // ── copilot ──
+    const messages = S.messages.map(x => ({ t:x.t, rowStyle:`display:flex;margin-bottom:10px;justify-content:${x.u?'flex-end':'flex-start'}`, bubbleStyle:`max-width:84%;padding:10px 13px;border-radius:14px;font-size:13px;line-height:1.55;${x.u?'background:#E4F1FA;color:#255870;border-bottom-right-radius:4px':'background:#F4F5F5;color:#576164;border-bottom-left-radius:4px'}` }));
+    let sug;
+    if(vFleetOverview||vFleetAnomaly) sug=['Which plant needs attention?','How many alerts are open?','Show fleet utilisation'];
+    else if(inDetail && client) sug=['What does this alert mean?','Do I need to shut down the plant?','What action do you recommend?'];
+    else if(inDetail) sug=['Why score 0.84?','What do the raw values show?','Similar cases?'];
+    else if(vFleetReport) sug=["What's missing in the report?",'Summarise the June report'];
+    else if(vCustomer) sug=['Draft a standard update','Which request needs review?'];
+    else sug=['Explain this plant status','Any anomalies here?'];
+    const suggestions = sug.map(t => ({ text:t, onClick:()=>this.ask(t) }));
+
+    const on = b => navBase + (b?navOn:navOff);
+    const cr = S.chartRange || '12h';
+    const crMap = { '12h':['12 h','12h ago'], '24h':['24 h','24h ago'], '7d':['7 d','7 days ago'] };
+    const chartLabel = 'last '+crMap[cr][0], chartAgoLabel = crMap[cr][1];
+    const pillStyle = a => `border:1px solid ${a?'#B9DDEF':'#E7EAEB'};background:${a?'#E4F1FA':'#fff'};color:${a?'#2C87B4':'#9AA1A3'};border-radius:16px;padding:4px 12px;font:inherit;font-size:11.5px;font-weight:600;cursor:pointer`;
+    const chartPills = [['12h','12h'],['24h','24h'],['7d','7d']].map(([v,l])=>({ text:l, onClick:()=>this.setState({chartRange:v}), style: pillStyle(cr===v) }));
+    return {
+      isFleet, isPlant:!isFleet,
+      vFleetOverview, vFleetAnomaly, vFleetReport, vCustomer, vPlantDash, vPlantAnomList, vAnomClient, vAnomExpert,
+      plantNoAlert,
+      goFOverview:()=>this.goFleet('overview'), goFAnomaly:()=>this.goFleet('anomaly'), goFReport:()=>this.goFleet('report'), goFCustomer:()=>this.goFleet('customer'),
+      goPDash:()=>this.goPlant('dashboard'), goPAnomaly:()=>this.goPlant('anomaly'), goPCustomer:()=>this.goPlant('customer'), openPlantAnomaly:()=>this.openAlert(0),
+      goReportForPlant:()=>this.navTo({scope:'fleet',fModule:'report',pModule:'dashboard',anomAlert:null},{reportScope:pIdx}),
+      backToFleet:()=>this.backToFleet(), backToAlerts:()=>this.backToAlerts(), goHome:()=>this.goFleet('overview'),
+      navFOverview:on(vFleetOverview), navFAnomaly:on(vFleetAnomaly), navFReport:on(vFleetReport), navFCustomer:on(vFleetCustomer),
+      navPDash:on(vPlantDash), navPAnomaly:on(!isFleet&&S.pModule==='anomaly'), navPCustomer:on(vPlantCustomer),
+      navShowFleet: client && isFleet, navShowPlant: client && !isFleet, expertNav: !client, showCopilot: client,
+      goExpertMessages:()=>this.goFleet('customer'), navExpertMsg: on(vCustomer),
+      showPAnomBadge: P.alerts>0 && !anomResolved(pIdx), pAnomBadge:String(P.alerts), showCustBadge, custBadge,
+      showFleetAnomBadge, fleetAnomBadge,
+      advanced:adv, setBasic:()=>this.setState({level:'basic',userMenuOpen:false}), setAdv:()=>this.setState({level:'advanced',userMenuOpen:false}), segBasic:seg(!adv), segAdv:seg(adv),
+      showRole: inDetail, setClient:()=>this.setState({role:'client'}), setExpert:()=>this.setState({role:'expert'}), segClient:seg(client), segExpert:seg(!client),
+      activeUserName: client?'Julia User':'Bernd Biogas', activeUserRole: client?'Operator · Scheer Energy':'Process Expert · OEKOBIT', activeUserInitials: client?'JU':'BB',
+      juliaActive: client, berndActive: !client,
+      switchToJulia:()=>{ this.setState({role:'client',userMenuOpen:false}); this.navTo({scope:'fleet',fModule:'overview',pModule:'dashboard',anomAlert:null},{msgPlant:null}); }, switchToBernd:()=>{ this.setState({role:'expert',userMenuOpen:false}); this.navTo({scope:'fleet',fModule:'customer',pModule:'dashboard',anomAlert:null},{msgPlant:null}); },
+      uJuliaRow: uRow(client), uBerndRow: uRow(!client), uJuliaAv: uAv(client,'#2C87B4'), uBerndAv: uAv(!client,'#C6841A'),
+      title, subtitle, plantName, timeStr:'09 Jul 2026 · 10:42 CET',
+      canBack:S.hi>0, canForward:S.hi<S.hist.length-1, goBack:()=>this.back(), goForward:()=>this.forward(),
+      backStyle:'width:34px;height:34px;border-radius:9px;border:1px solid #E6E9EA;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#798183;padding:0;'+(S.hi>0?'':'opacity:.35;pointer-events:none;'),
+      forwardStyle:'width:34px;height:34px;border-radius:9px;border:1px solid #E6E9EA;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#798183;padding:0;'+(S.hi<S.hist.length-1?'':'opacity:.35;pointer-events:none;'),
+      userMenuOpen:S.userMenuOpen, toggleUserMenu:()=>this.setState(s=>({userMenuOpen:!s.userMenuOpen})),
+      scopePlant,
+      fleetKpis, plants, pillars,
+      anomFilterChips, anomalyRows, anomSummary, anomListEmpty: anomalyRows.length===0,
+      reportScopeChips, reportTitle, reportScopeLabel, reportKpis, reportSections, reportStats,
+      reportEdit:()=>this.setState({reportNote:'Draft opened in edit mode — you can adjust sections.'}), reportApprove:()=>this.setState({reportNote:'Report approved and sent to the customer.'}), hasReportNote:!!S.reportNote, reportNote:S.reportNote,
+      convList, inboxList, inboxEmpty, showInbox, showThread, showInboxBack, backToInbox:()=>this.backToInbox(),
+      composeOpen, composeTargets, composeTopics, composeSubject, composeCanStart, onComposeSubject:e=>this.setState({composeSubject:e.target.value}), startCompose:()=>this.startCompose(),
+      openCompose:()=>this.setState({composeOpen:true, composeSubject:'', composeTopic:'', composeTarget:'general'}), closeCompose:()=>this.setState({composeOpen:false}), stopProp:(e)=>e.stopPropagation(),
+      inboxCountLabel: inboxList.length ? (inboxList.length+(inboxList.length===1?' conversation':' conversations')) : '',
+      inboxEmptyTitle: client ? 'No messages yet' : 'No open requests',
+      inboxEmptySub: client ? ('Start a conversation with '+ (client?'Bernd Biogas':'') +', your OEKOBIT expert, or submit an anomaly for review from the analysis view.') : 'Review requests and messages from operators will appear here.',
+      inboxEmptyCanCompose: client,
+      canCompose: client,
+      threadMsgs:fThreadMsgs, threadEmpty:fThreadEmpty, caseWith, threadTitle:fThreadTitle, threadSub:fThreadSub, caseAvInit:fCaseAvInit, caseAvBg:fCaseAvBg, caseStatusLabel:fCaseStatusLabel, caseStatusStyle:fCaseStatusStyle, showClose:fShowClose, showAttach, aiTyping, emptyTitle, emptySub, composerPlaceholder:fComposerPlaceholder, sendDisabled, sendBtnStyle,
+      threadDraft:S.threadDraft||'', onThreadDraft:e=>this.onThreadDraft(e), onThreadKey:e=>this.onThreadKey(e), sendThread:()=>this.sendThread(), onAttach:e=>this.onAttach(e), closeCase:()=>this.closeCase(),
+      plantHasAlert, plantStatusText, plantKpis, plantExtra, plantMeta,
+      chartLabel, chartAgoLabel, chartPills,
+      anomalyEvents, anomListKpis, elevatedCards, bannerBg, bannerBorder, bannerIconStroke, bannerChipBg,
+      anomTime: A?A.time:'', anomCategory: A?A.category:'', anomInterpTitle: A?A.interpTitle:'', anomInterp: A?A.interp:'', anomRec: A?A.rec:'', anomExplain: A?A.explain:'',
+      anomBanner: A?(A.count+' elevated values combined into one anomaly · detected at '+A.time):'',
+      anomHasStatus, anomStatusLabel, anomStatusStyle, anomThread, anomHasThread, openAnomInMessages,
+      anomTitle: A?A.title:'', anomSubline: A?(A.count+' elevated values · detected at '+A.time+' · '+A.category):'',
+      scoreVal: A?A.score:'', scoreArc: A?A.scoreArc:'', riskVal: A?A.risk:'', riskArc: A?A.riskArc:'', ruleStatus: A?A.ruleStatus:'',
+      sendToExpert:()=>this.setState({reviewModalOpen:true, reviewSubmitted:false}),
+      reviewModalOpen:!!S.reviewModalOpen, reviewSubmitted:!!S.reviewSubmitted,
+      reviewAnomTitle: A?A.title:'', reviewAnomSummary: A?(A.count+' elevated values · '+A.category+' · detected at '+A.time):'',
+      reviewInterp: A?A.interpTitle:'',
+      reviewItems: A ? A.actions.map((t,i)=>{ const done=chk.includes(i); return { text:t, mark: done?'\u2713':'', boxBg: done?'#1E9E63':'#fff', boxBorder: done?'#1E9E63':'#D4D8D9', textColor: done?'#576164':'#9AA1A3' }; }) : [],
+      reviewDoneLabel: A?(chk.filter(i=>i<A.actions.length).length+' of '+A.actions.length+' checked off'):'',
+      reviewNote: S.reviewNote||'', onReviewNote:(e)=>this.setState({reviewNote:e.target.value}),
+      reviewModalForm: !S.reviewSubmitted,
+      reviewSubmitDisabled: !(S.reviewNote && S.reviewNote.trim()),
+      reviewSubmitStyle: (S.reviewNote && S.reviewNote.trim())
+        ? 'border:0;background:#1E9E63;color:#fff;border-radius:10px;padding:12px 22px;font:inherit;font-size:13.5px;font-weight:600;cursor:pointer'
+        : 'border:0;background:#CBD3D4;color:#fff;border-radius:10px;padding:12px 22px;font:inherit;font-size:13.5px;font-weight:600;cursor:not-allowed',
+      submitReview:()=>{ const S=this.state; if(!(S.reviewNote&&S.reviewNote.trim())) return; const AA=this.anomDef()[S.scope]; if(AA){ const chk2=(S.checkedActions||{})[S.scope]||[]; const done=AA.actions.filter((t,i)=>chk2.includes(i)); const rep={ id:Date.now(), from:'julia', kind:'report', time:this.now(), report:{ title:AA.title, summary:AA.count+' elevated values · '+AA.category+' · detected at '+AA.time, note:S.reviewNote.trim(), actions:done, pi:S.scope, ai:S.anomAlert, decided:false } }; this.setState(s=>{ const pi=S.scope; const th={...(s.threads||{})}; th[pi]=[...(th[pi]||[]), rep]; return { reviewSubmitted:true, threads:th }; }); } else { this.setState({reviewSubmitted:true}); } },
+      closeReviewModal:()=>this.setState({reviewModalOpen:false, reviewSubmitted:false, reviewNote:''}),
+      goToRequestsFromModal:()=>{ const sc=this.state.scope; this.setState({reviewModalOpen:false, reviewSubmitted:false, reviewNote:''}); this.navTo({ scope:sc, fModule:'overview', pModule:'customer', anomAlert:null }, { msgPlant:sc }); },
+      clientKpis, clientExtra, actions, actionsDoneLabel, actionsTitle, actionsSubtitle, hasExpertMeasures, showSendToExpert, trust, alertQueue, variables,
+      openConfirm:()=>this.openConfirm(), closeConfirm:()=>this.closeConfirm(), confirmAnomaly:()=>this.confirmAnomaly(),
+      confirmModalOpen:!!S.confirmModalOpen, measuresDraft:S.measuresDraft||'', confirmMsg:S.confirmMsg||'',
+      onMeasuresDraft:(e)=>this.onMeasuresDraft(e), onConfirmMsg:(e)=>this.onConfirmMsg(e),
+      confirmForName: client ? 'the operator' : 'Julia User',
+      confirmDisabled: !((S.measuresDraft||'').split('\n').map(t=>t.trim()).filter(Boolean).length),
+      confirmSubmitStyle: ((S.measuresDraft||'').split('\n').map(t=>t.trim()).filter(Boolean).length)
+        ? 'border:0;background:#1E9E63;color:#fff;border-radius:10px;padding:12px 22px;font:inherit;font-size:13.5px;font-weight:600;cursor:pointer'
+        : 'border:0;background:#CBD3D4;color:#fff;border-radius:10px;padding:12px 22px;font:inherit;font-size:13.5px;font-weight:600;cursor:not-allowed',
+      decFalse:()=>this.decide('false'), decData:()=>this.decide('data'), hasDecision:!!S.decision, decisionNote:decMap[S.decision]||'',
+      copilotOpen:S.copilotOpen, toggleCopilot:()=>this.toggleCopilot(), messages, typing:S.typing, suggestions,
+      draft:S.draft, onDraft:e=>this.onDraft(e), onKey:e=>this.onKey(e), send:()=>this.send()
+    };
+  }
+}
+</script>
+</body>
+</html>
