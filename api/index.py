@@ -7,7 +7,6 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
 
-import pandas as pd
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,7 +24,7 @@ from .smartcontrol_pipeline import (
     SUPPORTED_MAINTENANCE_STATUSES,
     build_interpretation_diagnostics,
     load_smartcontrol_assets,
-    run_full_smartcontrol_pipeline,
+    run_full_smartcontrol_pipeline_for_record,
 )
 
 API_DIR = Path(__file__).resolve().parent
@@ -147,8 +146,6 @@ def to_jsonable(value: Any) -> Any:
         return [to_jsonable(item) for item in value]
     if isinstance(value, tuple):
         return [to_jsonable(item) for item in value]
-    if isinstance(value, pd.Timestamp):
-        return value.date().isoformat()
     if hasattr(value, "item"):
         value = value.item()
     if isinstance(value, float) and math.isnan(value):
@@ -366,18 +363,14 @@ def history_endpoint(
 def analyze_measurement(measurement: PlantMeasurement) -> dict[str, Any]:
     try:
         model, interpretation_reference = get_assets()
-        input_df = pd.DataFrame([measurement.model_dump()])
-
-        result = run_full_smartcontrol_pipeline(
-            df=input_df,
+        response = run_full_smartcontrol_pipeline_for_record(
+            record=measurement.model_dump(),
             trained_pipeline=model,
             interpretation_reference=interpretation_reference,
         )
 
-        row = result.iloc[0]
-        response = row.to_dict()
         response["diagnostics"] = build_interpretation_diagnostics(
-            row,
+            response,
             interpretation_reference,
         )
     except ValueError as exc:

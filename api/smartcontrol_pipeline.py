@@ -1,12 +1,17 @@
 
 import joblib
 import numpy as np
-import pandas as pd
+import warnings
 
 from sklearn.ensemble import IsolationForest
 from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+
+
+def require_pandas():
+    import pandas as pd
+    return pd
 
 
 # ============================================================
@@ -297,6 +302,7 @@ def prepare_model_input(
     df,
     use_engineered_features=True
 ):
+    pd = require_pandas()
     df_prepared = df.copy()
 
     if use_engineered_features:
@@ -631,22 +637,9 @@ def get_ai_anomaly_explanations(
 
     scored_reasons = []
 
-    gas_features = interpretation_reference[
-        "gas_input_features"
-    ]
-
-    gas_input = pd.DataFrame(
-        [[
-            row[feature]
-            for feature in gas_features
-        ]],
-        columns=gas_features
-    )
-
-    expected_gas_flow = (
-        interpretation_reference[
-            "gas_flow_model"
-        ].predict(gas_input)[0]
+    expected_gas_flow = predict_expected_gas_flow(
+        row,
+        interpretation_reference
     )
 
     gas_flow_residual = (
@@ -882,7 +875,7 @@ def interpret_dashboard_row(
             "Continue routine monitoring"
         )
 
-    return pd.Series({
+    return {
         "expert_review_required":
             expert_review_required,
 
@@ -897,20 +890,23 @@ def interpret_dashboard_row(
 
         "recommended_action":
             recommended_action
-    })
+    }
 
 
 def add_dashboard_interpretation(
     df,
     interpretation_reference
 ):
+    pd = require_pandas()
     df_dashboard = add_engineered_features(df)
 
     interpretation_columns = (
         df_dashboard.apply(
-            lambda row: interpret_dashboard_row(
-                row,
-                interpretation_reference
+            lambda row: pd.Series(
+                interpret_dashboard_row(
+                    row,
+                    interpretation_reference
+                )
             ),
             axis=1
         )
@@ -933,13 +929,56 @@ def native_number(value):
     if isinstance(value, np.generic):
         value = value.item()
 
-    if pd.isna(value):
+    if value is None:
+        return None
+
+    if isinstance(value, float) and np.isnan(value):
         return None
 
     if isinstance(value, (int, float)):
         return float(value)
 
     return value
+
+
+def numeric_model_array(row, selected_features):
+    values = []
+    for feature in selected_features:
+        if feature not in row:
+            raise ValueError(
+                f"Missing required model column: {feature}"
+            )
+        values.append(float(row[feature]))
+
+    return np.array([values], dtype=float)
+
+
+def predict_with_feature_order(model, row, selected_features):
+    model_input = numeric_model_array(row, selected_features)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        return model.predict(model_input)
+
+
+def decision_function_with_feature_order(model, row, selected_features):
+    model_input = numeric_model_array(row, selected_features)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        return model.decision_function(model_input)
+
+
+def predict_expected_gas_flow(row, interpretation_reference):
+    gas_features = interpretation_reference[
+        "gas_input_features"
+    ]
+
+    return predict_with_feature_order(
+        interpretation_reference["gas_flow_model"],
+        row,
+        gas_features
+    )[0]
 
 
 def classify_robust_deviation(z_score):
@@ -978,22 +1017,9 @@ def build_interpretation_diagnostics(
     the existing human-readable dashboard interpretation.
     """
 
-    gas_features = interpretation_reference[
-        "gas_input_features"
-    ]
-
-    gas_input = pd.DataFrame(
-        [[
-            row[feature]
-            for feature in gas_features
-        ]],
-        columns=gas_features
-    )
-
-    expected_gas_flow = (
-        interpretation_reference[
-            "gas_flow_model"
-        ].predict(gas_input)[0]
+    expected_gas_flow = predict_expected_gas_flow(
+        row,
+        interpretation_reference
     )
 
     gas_flow_residual = (
@@ -1114,6 +1140,107 @@ def run_full_smartcontrol_pipeline(
     )
 
     return df_dashboard
+
+
+def add_engineered_features_to_record(record):
+    output = dict(record)
+
+    if output["feedstock_input_tons"] <= 0:
+        raise ValueError(
+            "feedstock_input_tons must be greater than zero."
+        )
+
+    if output["co2_percent"] <= 0:
+        raise ValueError(
+            "co2_percent must be greater than zero."
+        )
+
+    output["biogas_yield_m3_per_ton"] = (
+        output["gas_flow_m3_h"]
+        / output["feedstock_input_tons"]
+    )
+    output["methane_to_co2_ratio"] = (
+        output["methane_percent"]
+        / output["co2_percent"]
+    )
+
+    return output
+
+
+def apply_rule_alerts_to_record(record):
+    output = dict(record)
+    output["ph_alert"] = get_ph_alert(output["ph_value"])
+    output["temperature_alert"] = get_temperature_alert(
+        output["temperature_c"]
+    )
+    output["oxygen_alert"] = get_oxygen_alert(
+        output["oxygen_percent"]
+    )
+    output["methane_alert"] = get_methane_alert(
+        output["methane_percent"]
+    )
+    output["h2s_alert"] = get_h2s_alert(output["h2s_ppm"])
+    output["maintenance_alert"] = get_maintenance_alert(
+        output["compressor_vibration_mm_s"],
+        output["pressure_bar"],
+        output["maintenance_status"]
+    )
+
+    alerts = [output[column] for column in RULE_ALERT_COLUMNS]
+    if "Critical" in alerts:
+        output["overall_rule_status"] = "Critical"
+    elif "Warning" in alerts:
+        output["overall_rule_status"] = "Warning"
+    else:
+        output["overall_rule_status"] = "Normal"
+
+    return output
+
+
+def predict_anomaly_for_record(record, trained_pipeline):
+    output = add_engineered_features_to_record(record)
+    prediction = predict_with_feature_order(
+        trained_pipeline,
+        output,
+        MODEL_FEATURES_ENGINEERED
+    )[0]
+    anomaly_score = -decision_function_with_feature_order(
+        trained_pipeline,
+        output,
+        MODEL_FEATURES_ENGINEERED
+    )[0]
+
+    output["anomaly_score"] = anomaly_score
+    output["anomaly_flag"] = (
+        "Anomaly" if prediction == -1 else "Normal"
+    )
+
+    return output
+
+
+def run_full_smartcontrol_pipeline_for_record(
+    record,
+    trained_pipeline,
+    interpretation_reference
+):
+    """
+    Runtime inference path for serverless API use without pandas.
+    """
+
+    rule_record = apply_rule_alerts_to_record(record)
+    anomaly_record = predict_anomaly_for_record(
+        rule_record,
+        trained_pipeline
+    )
+    interpretation = interpret_dashboard_row(
+        anomaly_record,
+        interpretation_reference
+    )
+
+    return {
+        **anomaly_record,
+        **interpretation
+    }
 
 
 def load_smartcontrol_assets(
