@@ -207,6 +207,8 @@ def test_rule_boundaries_and_maintenance_logic():
     [
         ("M0600", "Normal", "Normal", "None", -0.1414169168),
         ("M0123", "Normal", "Anomaly", "Isolation Forest", 0.1699632115),
+        ("M0039", "Warning", "Normal", "Rule-Based", -0.1056643154),
+        ("M0001", "Normal", "Normal", "None", -0.0979907956),
         ("M0128", "Critical", "Normal", "Rule-Based", -0.0701817186),
     ],
 )
@@ -239,6 +241,43 @@ def test_m0123_is_ai_only_anomaly(history_records):
     assert payload["anomaly_flag"] == "Anomaly"
     assert payload["trigger_source"] == "Isolation Forest"
     assert payload["anomaly_score"] > payload["diagnostics"]["anomaly_threshold"]
+
+
+def test_new_demonstration_examples(history_records):
+    warning_response = client.post("/api/analyze", json=measurement(history_records, "M0039"))
+    normal_response = client.post("/api/analyze", json=measurement(history_records, "M0001"))
+
+    assert warning_response.status_code == 200
+    warning = warning_response.json()
+    assert warning["overall_rule_status"] == "Warning"
+    assert warning["anomaly_flag"] == "Normal"
+    assert warning["trigger_source"] == "Rule-Based"
+    assert warning["maintenance_status"] == "overdue"
+    assert warning["maintenance_alert"] == "Warning"
+    assert warning["expert_review_required"] == "Yes"
+    assert warning["possible_issue_category"] == "Equipment"
+    assert warning["anomaly_score"] <= warning["diagnostics"]["anomaly_threshold"]
+    assert warning["short_explanation"] == "Equipment condition requires maintenance review"
+
+    assert normal_response.status_code == 200
+    normal = normal_response.json()
+    assert normal["overall_rule_status"] == "Normal"
+    assert normal["anomaly_flag"] == "Normal"
+    assert normal["trigger_source"] == "None"
+    assert normal["expert_review_required"] == "No"
+    assert normal["possible_issue_category"] == "None"
+    for alert_name in (
+        "ph_alert",
+        "temperature_alert",
+        "oxygen_alert",
+        "methane_alert",
+        "h2s_alert",
+        "maintenance_alert",
+    ):
+        assert normal[alert_name] == "Normal"
+    assert normal["short_explanation"] == "No alert or unusual process pattern detected"
+    assert normal["recommended_action"] == "Continue routine monitoring"
+    assert normal["anomaly_score"] <= normal["diagnostics"]["anomaly_threshold"]
 
 
 def test_cached_history_payload():

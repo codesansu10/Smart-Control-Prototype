@@ -3,7 +3,8 @@ import type {
   DailyAggregate,
   HistoryRecord,
   PeriodKey,
-  PeriodKpis
+  PeriodKpis,
+  ScenarioKey
 } from "../types/smartcontrol";
 
 export const chartMetrics: Array<{ key: ChartMetric; label: string; unit: string }> = [
@@ -137,13 +138,15 @@ export function ruleBreakdown(result: {
 }
 
 export function getScenarioRecord(records: HistoryRecord[], key: string): HistoryRecord | undefined {
-  const scenarioIds: Record<string, string> = {
+  const scenarioIds: Partial<Record<ScenarioKey, string>> = {
     latest: "M0600",
     "ai-anomaly": "M0123",
+    "rule-warning": "M0039",
+    "normal-operation": "M0001",
     "critical-rule": "M0128"
   };
 
-  const measurementId = scenarioIds[key];
+  const measurementId = scenarioIds[key as ScenarioKey];
   if (!measurementId) {
     return undefined;
   }

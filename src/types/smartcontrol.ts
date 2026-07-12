@@ -1,5 +1,6 @@
 export type DashboardMode = "Basic" | "Advanced";
-export type ScenarioKey = "latest" | "ai-anomaly" | "critical-rule" | "custom";
+export type ExampleScenarioKey = "ai-anomaly" | "rule-warning" | "normal-operation";
+export type ScenarioKey = "latest" | ExampleScenarioKey | "critical-rule" | "custom";
 export type PeriodKey = "7" | "30" | "all";
 export type Severity = "Normal" | "Warning" | "Critical";
 export type AnomalyFlag = "Normal" | "Anomaly";

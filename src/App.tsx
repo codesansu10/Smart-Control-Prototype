@@ -8,6 +8,7 @@ import type {
   MessageThread,
   MonthlyReport,
   PlantMeasurement,
+  ScenarioKey,
   WorkflowCase
 } from "./types/smartcontrol";
 import { analyzeMeasurement, getHealth, getHistory, getMetadata, getStaticHistory } from "./services/api";
@@ -38,9 +39,11 @@ import {
   upsertThread
 } from "./utils/workflow";
 
-const scenarioLabels = {
+const scenarioLabels: Record<ScenarioKey, string> = {
   latest: "Current measurement",
-  "ai-anomaly": "AI anomaly example",
+  "ai-anomaly": "AI-only anomaly",
+  "rule-warning": "Rule-based warning",
+  "normal-operation": "Normal operation",
   "critical-rule": "Critical rule record",
   custom: "Custom measurement"
 } as const;
@@ -53,7 +56,7 @@ const buildInfo = {
   buildDate: __BUILD_DATE__
 };
 
-function contextFromRecord(record: HistoryRecord, scenario: keyof typeof scenarioLabels, sourceLabel: string): AnalysisContext {
+function contextFromRecord(record: HistoryRecord, scenario: ScenarioKey, sourceLabel: string): AnalysisContext {
   return {
     measurementId: record.measurement_id,
     measurementDate: record.date,
@@ -142,7 +145,7 @@ function App() {
   }, [analysisContext, currentAnalysis, dataSource, kpis, metadata.model_limitations, periodHistory, workflow.anomalyCases, workflow.selectedMeasurementId, workflow.selectedPeriod, workflow.selectedScenario]);
   const reportHref = reportHtml ? `data:text/html;charset=utf-8,${encodeURIComponent(reportHtml)}` : "#";
 
-  const runAnalysis = useCallback(async (measurement: PlantMeasurement, scenario: keyof typeof scenarioLabels, fallbackRecord?: HistoryRecord, context?: AnalysisContext) => {
+  const runAnalysis = useCallback(async (measurement: PlantMeasurement, scenario: ScenarioKey, fallbackRecord?: HistoryRecord, context?: AnalysisContext) => {
     if (!isAnalyzeAvailable) {
       if (fallbackRecord) {
         setCurrentAnalysis(fallbackRecord);
@@ -179,7 +182,7 @@ function App() {
     }
   }, [isAnalyzeAvailable]);
 
-  const loadScenario = useCallback(async (scenario: keyof typeof scenarioLabels, records = historyRecords) => {
+  const loadScenario = useCallback(async (scenario: ScenarioKey, records = historyRecords) => {
     patchState({ selectedScenario: scenario });
 
     if (scenario === "custom") {
@@ -299,7 +302,7 @@ function App() {
     if (!record) return;
     patchState({ selectedMeasurementId: measurementId });
     const measurement = measurementFromHistory(record);
-    await runAnalysis(measurement, workflow.selectedScenario === "custom" ? "latest" : workflow.selectedScenario, record, contextFromRecord(record, "latest", "Historical workbook record submitted to the live API"));
+    await runAnalysis(measurement, "latest", record, contextFromRecord(record, "latest", "Historical workbook record submitted to the live API"));
   }
 
   function updateThreads(thread: MessageThread) {

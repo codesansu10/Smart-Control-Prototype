@@ -64,7 +64,9 @@ function reportLabel(key: string): string {
 function scenarioLabel(scenario: ScenarioKey): string {
   if (scenario === "latest") return "Current measurement";
   if (scenario === "critical-rule") return "Critical rule record";
-  if (scenario === "ai-anomaly") return "AI anomaly example";
+  if (scenario === "ai-anomaly") return "AI-only anomaly";
+  if (scenario === "rule-warning") return "Rule-based warning";
+  if (scenario === "normal-operation") return "Normal operation";
   return "Custom measurement";
 }
 

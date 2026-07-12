@@ -145,7 +145,14 @@ export function AnomalyDetectionView(props: {
                           <td>
                             <div className="table-actions">
                               <button type="button" className="table-link" onClick={() => props.onSelectMeasurement(record.measurement_id)}>Select</button>
-                              <button type="button" className="table-link" onClick={() => setExpandedMeasurementId(expanded ? null : record.measurement_id)}>{expanded ? "Hide" : "Details"}</button>
+                              <button
+                                type="button"
+                                className="table-link"
+                                aria-expanded={expanded}
+                                onClick={() => setExpandedMeasurementId(expanded ? null : record.measurement_id)}
+                              >
+                                {expanded ? "Hide details" : "Details"}
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -190,6 +197,7 @@ export function AnomalyDetectionView(props: {
               <div className="diagnostic-row"><strong>Julia note</strong><span>{selectedCase?.note || "No operator note yet"}</span></div>
               <div className="diagnostic-row"><strong>Existing expert reply</strong><span>{selectedCase?.expertReply || "No expert reply yet"}</span></div>
               <div className="diagnostic-row"><strong>Operator measures</strong><span>{selectedCase?.operatorMeasures || "No measures defined yet"}</span></div>
+              <div className="diagnostic-row"><strong>Expert decision</strong><span>{selectedCase?.expertDecision ?? "Pending"}</span></div>
             </>
           )}
         </div>
@@ -224,6 +232,8 @@ function RecordDetails(props: { record: HistoryRecord; expert: boolean }) {
 
   return (
     <div className="advanced-row-details">
+      <div><strong>Measurement ID:</strong> {props.record.measurement_id}</div>
+      <div><strong>Date:</strong> {props.record.date}</div>
       <div><strong>Possible issue category:</strong> {props.record.possible_issue_category ?? "None"}</div>
       <div><strong>Short explanation:</strong> {props.record.short_explanation}</div>
       <div><strong>Recommended action:</strong> {props.record.recommended_action}</div>
@@ -233,9 +243,10 @@ function RecordDetails(props: { record: HistoryRecord; expert: boolean }) {
       <div><strong>Expert review required:</strong> {props.record.expert_review_required}</div>
       {props.expert && (
         <>
-          <div><strong>Raw anomaly score:</strong> {numberFormat(props.record.anomaly_score, 5)}</div>
+          <div><strong>Raw signed anomaly score:</strong> {numberFormat(props.record.anomaly_score, 5)}</div>
           <div><strong>All six alerts:</strong> pH {props.record.ph_alert}, Temperature {props.record.temperature_alert}, Oxygen {props.record.oxygen_alert}, Methane {props.record.methane_alert}, H2S {props.record.h2s_alert}, Maintenance {props.record.maintenance_alert}</div>
-          <div><strong>Engineered features:</strong> Yield {numberFormat(props.record.biogas_yield_m3_per_ton, 2)} m3/t, CH4/CO2 {numberFormat(props.record.methane_to_co2_ratio, 3)}</div>
+          <div><strong>Biogas yield:</strong> {numberFormat(props.record.biogas_yield_m3_per_ton, 2)} m3/t</div>
+          <div><strong>Methane-to-CO2 ratio:</strong> {numberFormat(props.record.methane_to_co2_ratio, 3)}</div>
           {diagnostics && (
             <>
               <div><strong>Expected gas flow:</strong> {numberFormat(diagnostics.expected_gas_flow_m3_h, 2)} m3/h</div>

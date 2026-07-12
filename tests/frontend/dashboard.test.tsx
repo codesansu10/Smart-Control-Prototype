@@ -19,15 +19,18 @@ import { MeasurementDrawer } from "../../src/components/MeasurementDrawer";
 import { AnomalyDetectionView } from "../../src/components/AnomalyDetectionView";
 import { MessagesView } from "../../src/components/MessagesView";
 import { MonthlyReportView } from "../../src/components/MonthlyReportView";
-import { DashboardView } from "../../src/components/DashboardView";
+import { DashboardView, DataSourceIndicator } from "../../src/components/DashboardView";
 import { PlantColleague } from "../../src/components/PlantColleague";
 import { ReviewQueueView } from "../../src/components/ReviewQueueView";
+import { answerPlantColleague, type PlantColleagueContext } from "../../src/utils/plantColleagueResponses";
 
 const records = historyPayload.records as HistoryRecord[];
 const latest = records.find((record) => record.measurement_id === "M0600")!;
 const anomaly = records.find((record) => record.measurement_id === "M0123")!;
+const ruleWarning = records.find((record) => record.measurement_id === "M0039")!;
+const normalOperation = records.find((record) => record.measurement_id === "M0001")!;
 const critical = records.find((record) => record.measurement_id === "M0128")!;
-const normal = records.find((record) => record.measurement_id !== "M0123" && record.measurement_id !== "M0128" && record.anomaly_flag === "Normal" && record.overall_rule_status === "Normal" && record.expert_review_required === "No")!;
+const normal = normalOperation;
 
 function measurement(record: HistoryRecord): PlantMeasurement {
   return measurementFromHistory(record);
@@ -61,6 +64,8 @@ describe("dashboard status and history logic", () => {
   it("selects verified demonstration scenarios", () => {
     expect(getScenarioRecord(records, "latest")?.measurement_id).toBe("M0600");
     expect(getScenarioRecord(records, "ai-anomaly")?.measurement_id).toBe("M0123");
+    expect(getScenarioRecord(records, "rule-warning")?.measurement_id).toBe("M0039");
+    expect(getScenarioRecord(records, "normal-operation")?.measurement_id).toBe("M0001");
     expect(getScenarioRecord(records, "critical-rule")?.measurement_id).toBe("M0128");
   });
 
@@ -91,6 +96,27 @@ describe("sidebar and user menu", () => {
     expect(appSource).toContain('const effectiveMode = workflow.role === "expert" ? "Advanced" : workflow.mode');
     expect(appSource).toContain('workflow.role === "operator"');
     expect(appSource).toContain("Analyze Measurement");
+  });
+
+  it("keeps M0039 as a rule-based warning and M0001 as normal operation", () => {
+    expect(ruleWarning.overall_rule_status).toBe("Warning");
+    expect(ruleWarning.anomaly_flag).toBe("Normal");
+    expect(ruleWarning.trigger_source).toBe("Rule-Based");
+    expect(ruleWarning.maintenance_status).toBe("overdue");
+    expect(ruleWarning.maintenance_alert).toBe("Warning");
+    expect(ruleWarning.expert_review_required).toBe("Yes");
+    expect(ruleWarning.possible_issue_category).toBe("Equipment");
+    expect(ruleWarning.anomaly_score).toBeLessThanOrEqual(0);
+    expect(ruleWarning.short_explanation).toBe("Equipment condition requires maintenance review");
+
+    expect(normalOperation.overall_rule_status).toBe("Normal");
+    expect(normalOperation.anomaly_flag).toBe("Normal");
+    expect(normalOperation.trigger_source).toBeNull();
+    expect(normalOperation.expert_review_required).toBe("No");
+    expect(normalOperation.possible_issue_category).toBeNull();
+    expect(deterministicRuleStatuses(normalOperation).every((status) => status === "Normal")).toBe(true);
+    expect(normalOperation.short_explanation).toBe("No alert or unusual process pattern detected");
+    expect(normalOperation.recommended_action).toBe("Continue routine monitoring");
   });
 
   it("shows role-specific navigation only and hides period/scenario controls", () => {
@@ -213,11 +239,19 @@ describe("dashboard presentation", () => {
     expect(screen.getByText("Isolation Forest output")).not.toBeNull();
     expect(screen.getAllByText("Historical Trends")).toHaveLength(1);
   });
+
+  it("shows the live API connected indicator when the API is healthy", () => {
+    render(<DataSourceIndicator dataSource="Live API connected" isApiConnected={true} isAnalyzeAvailable={true} />);
+
+    expect(screen.getAllByText("Live API connected")).toHaveLength(2);
+    expect(screen.queryByText("Live analysis disabled")).toBeNull();
+  });
 });
 
 describe("analyze drawer and anomaly list", () => {
-  it("shows only the AI-only example and the custom form in analyze drawer", () => {
-    render(
+  it("shows exactly three verified examples and the custom form in analyze drawer", () => {
+    const loadScenario = vi.fn().mockResolvedValue(undefined);
+    const { container } = render(
       <MeasurementDrawer
         initialMeasurement={measurement(latest)}
         metadata={{
@@ -238,14 +272,28 @@ describe("analyze drawer and anomaly list", () => {
         onClose={vi.fn()}
         onSubmit={async () => {}}
         isAnalyzing={false}
-        loadScenario={async () => {}}
+        loadScenario={loadScenario}
       />
     );
 
-    expect(screen.getByRole("button", { name: "AI-only anomaly example" })).not.toBeNull();
+    expect(container.querySelectorAll(".example-card")).toHaveLength(3);
+    expect(screen.getByRole("heading", { name: "AI-only anomaly" })).not.toBeNull();
+    expect(screen.getByRole("heading", { name: "Rule-based warning" })).not.toBeNull();
+    expect(screen.getByRole("heading", { name: "Normal operation" })).not.toBeNull();
+    expect(screen.getByText(/thresholds remain Normal but the Isolation Forest detects/)).not.toBeNull();
     expect(screen.queryByRole("button", { name: "Latest measurement" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Critical rule example" })).toBeNull();
     expect(screen.getByText("Custom measurement")).not.toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Load AI-only anomaly" }));
+    fireEvent.click(screen.getByRole("button", { name: "Load Rule-based warning" }));
+    fireEvent.click(screen.getByRole("button", { name: "Load Normal operation" }));
+    expect(loadScenario).toHaveBeenNthCalledWith(1, "ai-anomaly");
+    expect(loadScenario).toHaveBeenNthCalledWith(2, "rule-warning");
+    expect(loadScenario).toHaveBeenNthCalledWith(3, "normal-operation");
+    expect(Object.keys(measurement(anomaly))).toHaveLength(19);
+    expect(Object.keys(measurement(ruleWarning))).toHaveLength(19);
+    expect(Object.keys(measurement(normalOperation))).toHaveLength(19);
   });
 
   it("defaults to needs-attention records and supports all measurements filter", () => {
@@ -324,16 +372,16 @@ describe("analyze drawer and anomaly list", () => {
     expect(screen.getByText("False alarm")).not.toBeNull();
   });
 
-  it("shows compact details in Basic and expert diagnostics for Bernd", () => {
+  it("shows row-specific compact details in Basic and expert diagnostics for Bernd", () => {
     const basic = render(
       <AnomalyDetectionView
         role="operator"
         mode="Basic"
-        records={[anomaly]}
+        records={[anomaly, ruleWarning]}
         selectedPeriod="7"
         onPeriodChange={vi.fn()}
-        selectedMeasurementId={anomaly.measurement_id}
-        currentAnalysis={anomaly}
+        selectedMeasurementId={normalOperation.measurement_id}
+        currentAnalysis={normalOperation}
         anomalyCases={{}}
         onSelectMeasurement={vi.fn()}
         onSubmitForReview={vi.fn()}
@@ -341,9 +389,13 @@ describe("analyze drawer and anomaly list", () => {
       />
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Details" }));
-    expect(screen.getAllByText(anomaly.short_explanation).length).toBeGreaterThan(0);
-    expect(screen.queryByText(/Raw anomaly score:/)).toBeNull();
+    fireEvent.click(screen.getAllByRole("button", { name: "Details" })[1]);
+    expect(screen.getAllByText(ruleWarning.short_explanation).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(ruleWarning.recommended_action).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Measurement ID:/)).not.toBeNull();
+    expect(screen.getByText(/Date:/)).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Hide details" })).not.toBeNull();
+    expect(screen.queryByText(/Raw signed anomaly score:/)).toBeNull();
 
     basic.unmount();
     render(
@@ -363,8 +415,66 @@ describe("analyze drawer and anomaly list", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Details" }));
-    expect(screen.getByText(/Raw anomaly score:/)).not.toBeNull();
+    expect(screen.getByText(/Raw signed anomaly score:/)).not.toBeNull();
+    expect(screen.getByText(/Biogas yield:/)).not.toBeNull();
+    expect(screen.getByText(/Methane-to-CO2 ratio:/)).not.toBeNull();
     expect(screen.queryByRole("button", { name: /Submit for expert review/i })).toBeNull();
+  });
+
+  it("keeps Details correct after pagination and filter changes", () => {
+    const items = Array.from({ length: 12 }, (_, index) => ({
+      ...anomaly,
+      measurement_id: `M8${String(index).padStart(3, "0")}`,
+      date: "2026-04-30",
+      short_explanation: `Pagination explanation ${index}`,
+      recommended_action: `Pagination action ${index}`
+    }));
+
+    render(
+      <AnomalyDetectionView
+        role="operator"
+        mode="Basic"
+        records={items}
+        selectedPeriod="7"
+        onPeriodChange={vi.fn()}
+        selectedMeasurementId={items[0].measurement_id}
+        currentAnalysis={items[0]}
+        anomalyCases={{}}
+        onSelectMeasurement={vi.fn()}
+        onSubmitForReview={vi.fn()}
+        onSendToMessages={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Details" })[0]);
+    expect(screen.getAllByText("Pagination explanation 0").length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Details" })[0]);
+    expect(screen.getByText("Pagination explanation 10")).not.toBeNull();
+  });
+
+  it("shows Details for rule-filtered rows without requiring Select", () => {
+    render(
+      <AnomalyDetectionView
+        role="expert"
+        mode="Advanced"
+        records={[normalOperation, anomaly, ruleWarning]}
+        selectedPeriod="7"
+        onPeriodChange={vi.fn()}
+        selectedMeasurementId={anomaly.measurement_id}
+        currentAnalysis={anomaly}
+        anomalyCases={{}}
+        onSelectMeasurement={vi.fn()}
+        onSubmitForReview={vi.fn()}
+        onSendToMessages={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Rule alerts" }));
+    expect(screen.getByText(ruleWarning.measurement_id)).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Details" }));
+    expect(screen.getByText(ruleWarning.short_explanation)).not.toBeNull();
+    expect(screen.getByText(ruleWarning.recommended_action)).not.toBeNull();
   });
 });
 
@@ -539,34 +649,54 @@ describe("Plant Colleague", () => {
     maintenanceOverdueCount: 1
   };
 
+  function assistantContext(analysis: HistoryRecord = anomaly, measurementId = analysis.measurement_id, role: "operator" | "expert" = "operator"): PlantColleagueContext {
+    return {
+      role,
+      activeModule: role === "expert" ? "review-queue" : "dashboard",
+      currentAnalysis: analysis,
+      selectedMeasurementId: measurementId,
+      historyRecords: records,
+      periodHistory: selectPeriod(records, "30"),
+      kpis,
+      anomalyCases: {
+        M0123: {
+          measurementId: "M0123",
+          note: "Please validate this unusual relationship.",
+          status: "Awaiting expert review",
+          expertDecision: null,
+          expertReply: "",
+          operatorMeasures: "",
+          conversationId: null,
+          updatedAt: "2026-07-12T00:00:00.000Z"
+        }
+      },
+      monthlyReports: {},
+      selectedMonth: "2026-04",
+      messageThreads: [],
+      dataSource: "Current analysis",
+      isApiConnected: true,
+      isAnalyzeAvailable: true
+    };
+  }
+
   function renderAssistant(role: "operator" | "expert" = "operator") {
+    const context = assistantContext(anomaly, "M0123", role);
     return render(
       <PlantColleague
-        role={role}
-        activeModule={role === "expert" ? "review-queue" : "dashboard"}
-        currentAnalysis={anomaly}
-        selectedMeasurementId="M0123"
-        historyRecords={records}
-        periodHistory={selectPeriod(records, "30")}
-        kpis={kpis}
-        anomalyCases={{
-          M0123: {
-            measurementId: "M0123",
-            note: "Please validate this unusual relationship.",
-            status: "Awaiting expert review",
-            expertDecision: null,
-            expertReply: "",
-            operatorMeasures: "",
-            conversationId: null,
-            updatedAt: "2026-07-12T00:00:00.000Z"
-          }
-        }}
-        monthlyReports={{}}
-        selectedMonth="2026-04"
-        messageThreads={[]}
-        dataSource="Current analysis"
-        isApiConnected={true}
-        isAnalyzeAvailable={true}
+        role={context.role}
+        activeModule={context.activeModule}
+        currentAnalysis={context.currentAnalysis}
+        selectedMeasurementId={context.selectedMeasurementId}
+        historyRecords={context.historyRecords}
+        periodHistory={context.periodHistory}
+        kpis={context.kpis}
+        anomalyCases={context.anomalyCases}
+        monthlyReports={context.monthlyReports}
+        selectedMonth={context.selectedMonth}
+        messageThreads={context.messageThreads}
+        dataSource={context.dataSource}
+        isApiConnected={context.isApiConnected}
+        isAnalyzeAvailable={context.isAnalyzeAvailable}
       />
     );
   }
@@ -593,6 +723,14 @@ describe("Plant Colleague", () => {
 
     expect(screen.getByText(/1 case is awaiting review/)).not.toBeNull();
     expect(screen.queryByRole("button", { name: "What should I send to the expert?" })).toBeNull();
+  });
+
+  it("explains AI-only, rule-based, normal, and selected outcomes locally", () => {
+    expect(answerPlantColleague("What is an AI-only anomaly?", assistantContext())).toContain("all monitored rules are Normal");
+    expect(answerPlantColleague("What is a rule-based warning?", assistantContext(ruleWarning))).toContain("defined operating or maintenance threshold");
+    expect(answerPlantColleague("What does Normal operation mean?", assistantContext(normalOperation))).toContain("routine monitoring can continue");
+    expect(answerPlantColleague("What is the difference between AI anomaly and rule alert?", assistantContext())).toContain("deterministic thresholds");
+    expect(answerPlantColleague("Explain the selected result.", assistantContext(ruleWarning))).toContain("rule-based warning");
   });
 });
 
@@ -643,7 +781,7 @@ describe("report generation", () => {
         measurementId: "M0123",
         measurementDate: anomaly.date,
         plantId: anomaly.plant_id,
-        scenarioLabel: "AI anomaly example",
+        scenarioLabel: "AI-only anomaly",
         sourceLabel: "Historical workbook measurement submitted to live API",
         submittedAt: "2026-07-12T00:00:00.000Z"
       },

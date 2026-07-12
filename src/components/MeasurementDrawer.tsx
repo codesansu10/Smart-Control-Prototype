@@ -1,8 +1,26 @@
 import { Activity, Loader2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useEscapeKey } from "../hooks/useEscapeKey";
-import type { ApiMetadata, PlantMeasurement } from "../types/smartcontrol";
+import type { ApiMetadata, ExampleScenarioKey, PlantMeasurement } from "../types/smartcontrol";
 import { measurementFields, validateMeasurement } from "../utils/measurements";
+
+const exampleScenarios: Array<{ key: ExampleScenarioKey; title: string; description: string }> = [
+  {
+    key: "ai-anomaly",
+    title: "AI-only anomaly",
+    description: "All individual rule checks are Normal, but the Isolation Forest identifies an unusual multivariable process relationship."
+  },
+  {
+    key: "rule-warning",
+    title: "Rule-based warning",
+    description: "A defined operating or maintenance threshold is crossed while the AI model remains Normal."
+  },
+  {
+    key: "normal-operation",
+    title: "Normal operation",
+    description: "Rule checks and the AI model are both Normal, so routine monitoring can continue."
+  }
+];
 
 export function MeasurementDrawer(props: {
   initialMeasurement: PlantMeasurement;
@@ -10,7 +28,7 @@ export function MeasurementDrawer(props: {
   onClose: () => void;
   onSubmit: (measurement: PlantMeasurement) => Promise<void>;
   isAnalyzing: boolean;
-  loadScenario: (scenario: "ai-anomaly") => Promise<void>;
+  loadScenario: (scenario: ExampleScenarioKey) => Promise<void>;
 }) {
   const [measurement, setMeasurement] = useState<PlantMeasurement>(props.initialMeasurement);
   const [errors, setErrors] = useState<string[]>([]);
@@ -40,7 +58,7 @@ export function MeasurementDrawer(props: {
     await props.onSubmit(measurement);
   }
 
-  async function useExample(scenario: "ai-anomaly") {
+  async function useExample(scenario: ExampleScenarioKey) {
     await props.loadScenario(scenario);
     props.onClose();
   }
@@ -72,8 +90,26 @@ export function MeasurementDrawer(props: {
 
         <section className="panel section-panel">
           <span className="sidebar-label">Load example</span>
-          <div className="drawer-actions" style={{ marginTop: 10 }}>
-            <button className="secondary-button" type="button" onClick={() => void useExample("ai-anomaly")}>AI-only anomaly example</button>
+          <p className="muted example-explainer">
+            AI-only anomaly means thresholds remain Normal but the Isolation Forest detects an unusual relationship. Rule-based warning means a defined threshold leaves the Normal range while the model remains Normal. Normal operation means rules are Normal and the signed Isolation Forest score is at or below zero.
+          </p>
+          <div className="example-card-grid">
+            {exampleScenarios.map((example) => (
+              <article className="example-card" key={example.key}>
+                <div>
+                  <h3>{example.title}</h3>
+                  <p>{example.description}</p>
+                </div>
+                <button
+                  className="secondary-button"
+                  type="button"
+                  aria-label={`Load ${example.title}`}
+                  onClick={() => void useExample(example.key)}
+                >
+                  Load example
+                </button>
+              </article>
+            ))}
           </div>
         </section>
 

@@ -88,13 +88,13 @@ The workbook contains historical demonstration data, not a live telemetry stream
 
 The dataset does not contain current July 2026 data and has no time-of-day column. Periods such as "7 available days" use the last seven available dataset dates, not the browser or server current date. Executive charts aggregate by date. Advanced charts can show raw observations ordered by date and measurement ID.
 
-## Scenario Selector
+## Analyze Measurement Examples
 
-The dashboard includes verified scenarios:
+The dashboard initializes from the current measurement record `M0600`. Julia can open Analyze Measurement and load three verified workbook examples:
 
-- Current measurement record: `M0600`, Normal.
-- AI anomaly example: `M0123`, rule status Normal and Isolation Forest anomaly.
-- Critical rule record: `M0128`, Critical rule status and normal AI flag.
+- AI-only anomaly: `M0123`, rule status Normal and Isolation Forest anomaly.
+- Rule-based warning: `M0039`, maintenance warning and normal AI flag.
+- Normal operation: `M0001`, rule status Normal and normal AI flag.
 - Custom measurement: accessible 19-field analysis drawer.
 
 Scenario selections submit the raw input values to `/api/analyze` when the live API is available. Static history is used only as a visible fallback.

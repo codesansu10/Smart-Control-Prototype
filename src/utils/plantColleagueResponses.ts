@@ -68,6 +68,30 @@ function selectedRecord(context: PlantColleagueContext): HistoryRecord | null {
     : null;
 }
 
+function allRulesNormal(analysis: AnalysisResult): boolean {
+  return [
+    analysis.ph_alert,
+    analysis.temperature_alert,
+    analysis.oxygen_alert,
+    analysis.methane_alert,
+    analysis.h2s_alert,
+    analysis.maintenance_alert
+  ].every((status) => status === "Normal");
+}
+
+function selectedOutcomeLabel(analysis: AnalysisResult): string {
+  if (analysis.anomaly_flag === "Anomaly" && allRulesNormal(analysis)) {
+    return "AI-only anomaly";
+  }
+  if (analysis.overall_rule_status !== "Normal") {
+    return "rule-based warning";
+  }
+  if (analysis.anomaly_flag === "Normal" && allRulesNormal(analysis)) {
+    return "normal operation";
+  }
+  return "mixed monitoring result";
+}
+
 function topAttentionRecord(context: PlantColleagueContext): HistoryRecord | null {
   return [...context.periodHistory]
     .filter(needsAttention)
@@ -84,6 +108,13 @@ function currentIssueSummary(context: PlantColleagueContext): string {
   return `Selected measurement ${measurementId} is ${getUnifiedStatus(analysis)}. Rule-based status is ${analysis.overall_rule_status}, AI anomaly status is ${analysis.anomaly_flag}, and the trigger source is ${analysis.trigger_source ?? "None"}. ${analysis.short_explanation} Recommended action: ${analysis.recommended_action}`;
 }
 
+function selectedResultSummary(context: PlantColleagueContext): string {
+  const analysis = context.currentAnalysis;
+  const measurementId = context.selectedMeasurementId ?? "the selected measurement";
+  const outcome = selectedOutcomeLabel(analysis);
+  return `Selected measurement ${measurementId} is a ${outcome}. Rule-based status is ${analysis.overall_rule_status}, AI anomaly status is ${analysis.anomaly_flag}, trigger source is ${analysis.trigger_source ?? "None"}, and expert review is ${analysis.expert_review_required === "Yes" ? "required" : "not required"}. ${analysis.short_explanation} Recommended action: ${analysis.recommended_action}`;
+}
+
 export function answerPlantColleague(question: string, context: PlantColleagueContext): string {
   const text = question.trim().toLowerCase();
   const analysis = context.currentAnalysis;
@@ -95,6 +126,26 @@ export function answerPlantColleague(question: string, context: PlantColleagueCo
 
   if (!text) {
     return fallbackResponse();
+  }
+
+  if (text.includes("ai-only") || text.includes("ai only")) {
+    return `An AI-only anomaly means all monitored rules are Normal, but the Isolation Forest detects an unusual multivariable relationship across the measurements. It is a model flag, not a percentage or confidence score.`;
+  }
+
+  if (text.includes("rule-based warning") || text.includes("rule warning")) {
+    return `A rule-based warning means a defined operating or maintenance threshold has crossed outside the Normal range, while the Isolation Forest may still classify the measurement as Normal.`;
+  }
+
+  if (text.includes("normal operation")) {
+    return `Normal operation means the individual rules are Normal, the Isolation Forest score is at or below zero, no expert review is required, and routine monitoring can continue.`;
+  }
+
+  if (text.includes("difference") && (text.includes("ai anomaly") || text.includes("rule alert") || text.includes("rule-based"))) {
+    return `A rule alert comes from deterministic thresholds such as pH, temperature, gas quality or maintenance state. An AI anomaly comes from the Isolation Forest detecting an unusual relationship across multiple measurements. A record can be rule-based, AI-only, both, or Normal.`;
+  }
+
+  if (text.includes("selected result") || text.includes("current result")) {
+    return selectedResultSummary(context);
   }
 
   if (text.includes("api") || text.includes("connected") || text.includes("data source")) {
@@ -186,11 +237,13 @@ export function plantColleaguePrompts(role: UserRole): string[] {
   return role === "expert"
     ? [
         "How many cases are awaiting review?",
+        "Explain the selected result.",
         "Explain the selected review case.",
         "What decision is pending?"
       ]
-    : [
+      : [
         "What is the current plant status?",
+        "Explain the selected result.",
         "Which measurement needs attention?",
         "What should I send to the expert?"
       ];

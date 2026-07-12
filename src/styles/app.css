@@ -626,13 +626,20 @@ th {
   background: transparent;
   color: #0a6f9f;
   font-weight: 800;
-  padding: 0;
+  padding: 3px 2px;
+  border-radius: 4px;
+}
+
+.table-link:focus-visible {
+  outline: 2px solid #008eca;
+  outline-offset: 2px;
 }
 
 .table-actions {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .advanced-row-details {
@@ -676,6 +683,41 @@ th {
 .section-panel {
   box-shadow: none;
   padding: 12px;
+}
+
+.example-explainer {
+  max-width: 900px;
+  margin-top: 8px;
+}
+
+.example-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.example-card {
+  display: grid;
+  align-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  border: 1px solid #dce5e7;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fbfdfd;
+}
+
+.example-card h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+  color: #12323d;
+}
+
+.example-card p {
+  margin: 0;
+  color: #52666d;
+  line-height: 1.45;
 }
 
 .details-panel {
@@ -1012,7 +1054,8 @@ th {
   .context-items,
   .ai-only-facts,
   .kpi-grid,
-  .form-grid {
+  .form-grid,
+  .example-card-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1037,7 +1080,8 @@ th {
   .context-items,
   .ai-only-facts,
   .kpi-grid,
-  .form-grid {
+  .form-grid,
+  .example-card-grid {
     grid-template-columns: 1fr;
   }
 
