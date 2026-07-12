@@ -5,8 +5,7 @@ import {
   Database,
   Download,
   FileText,
-  Printer,
-  Settings2
+  Printer
 } from "lucide-react";
 import {
   Bar,
@@ -34,6 +33,7 @@ import type {
   DataSourceState,
   DailyAggregate,
   HistoryRecord,
+  PeriodKey,
   PeriodKpis,
   Severity,
   WorkflowCase
@@ -43,6 +43,7 @@ import { compactNumber, numberFormat, percent } from "../utils/format";
 import { chartMetrics, ruleBreakdown } from "../utils/history";
 import { displayTriggerSource, getUnifiedStatus, severityClass } from "../utils/status";
 import { describeCase } from "../utils/workflow";
+import { PeriodSelector } from "./PeriodSelector";
 
 const ruleRows = [
   { key: "ph", alert: "ph_alert", label: "pH", value: "ph_value", unit: "pH" },
@@ -67,25 +68,31 @@ export function DashboardView(props: {
   reportHref: string;
   printReport: () => void;
   caseItem: WorkflowCase | null;
+  selectedPeriod: PeriodKey;
+  onPeriodChange: (period: PeriodKey) => void;
 }) {
   const selectedMetricInfo = chartMetrics.find((metric) => metric.key === props.selectedMetric) ?? chartMetrics[0];
   const unifiedStatus = getUnifiedStatus(props.analysis);
 
   return (
     <>
-      <StatusStrip analysis={props.analysis} dataSource={props.dataSource} unifiedStatus={unifiedStatus} />
-      <DataContextPanel context={props.context} metadata={props.metadata} />
-      {isAiOnlyAnomaly(props.analysis) && <AiOnlyAnomalyBanner analysis={props.analysis} metadata={props.metadata} />}
+      <StatusStrip analysis={props.analysis} dataSource={props.dataSource} unifiedStatus={unifiedStatus} caseItem={props.caseItem} />
       <section className="panel" style={{ marginBottom: 14 }}>
         <div className="panel-header">
           <div>
-            <h2>Case state</h2>
-            <p className="muted">Model output and expert workflow are tracked separately.</p>
+            <h2>Operational guidance</h2>
+            <p className="muted">What requires attention and what to do next.</p>
           </div>
-          <Settings2 size={18} aria-hidden="true" />
+          <FileText size={20} aria-hidden="true" />
         </div>
-        <p>{describeCase(props.caseItem, props.analysis)}</p>
+        <div className="diagnostic-list">
+          <DiagnosticLine label="Case status" value={describeCase(props.caseItem, props.analysis)} />
+          <DiagnosticLine label="Short explanation" value={props.analysis.short_explanation} />
+          <DiagnosticLine label="Recommended action" value={props.analysis.recommended_action} />
+        </div>
       </section>
+      <DataContextPanel context={props.context} metadata={props.metadata} />
+      {isAiOnlyAnomaly(props.analysis) && <AiOnlyAnomalyBanner analysis={props.analysis} metadata={props.metadata} />}
       {props.mode === "Basic" ? (
         <BasicView
           analysis={props.analysis}
@@ -96,6 +103,8 @@ export function DashboardView(props: {
           selectedMetric={props.selectedMetric}
           setSelectedMetric={props.setSelectedMetric}
           metricInfo={selectedMetricInfo}
+          selectedPeriod={props.selectedPeriod}
+          onPeriodChange={props.onPeriodChange}
         />
       ) : (
         <AdvancedView
@@ -105,6 +114,10 @@ export function DashboardView(props: {
           selectedMetric={props.selectedMetric}
           setSelectedMetric={props.setSelectedMetric}
           metricInfo={selectedMetricInfo}
+          selectedPeriod={props.selectedPeriod}
+          onPeriodChange={props.onPeriodChange}
+          dailyData={props.dailyData}
+          kpis={props.kpis}
         />
       )}
 
@@ -200,9 +213,8 @@ function AiOnlyAnomalyBanner(props: {
           <span className="sidebar-label">AI-only anomaly</span>
           <h2>No deterministic rule threshold was crossed</h2>
           <p>
-            AI-only anomaly detected. All monitored parameters remain within their individual rule-based limits.
-            However, the Isolation Forest detected an unusual multivariable relationship between the current process
-            measurements. This is an early-warning signal and requires expert validation.
+            AI-only anomaly detected. All monitored parameters remain within individual rule-based limits.
+            However, the Isolation Forest detected an unusual multivariable relationship and requires expert validation.
           </p>
         </div>
         <BrainCircuit size={30} aria-hidden="true" />
@@ -223,18 +235,19 @@ function StatusStrip(props: {
   analysis: AnalysisResult;
   unifiedStatus: Severity;
   dataSource: string;
+  caseItem: WorkflowCase | null;
 }) {
   return (
     <section className="status-grid" aria-label="Current status summary">
       <div className="status-panel primary-status">
-        <span className="sidebar-label">Unified status</span>
+        <span className="sidebar-label">Unified plant status</span>
         <div className="status-value">
           <span className={`status-pill ${severityClass(props.unifiedStatus)}`}>{props.unifiedStatus}</span>
         </div>
       </div>
       <StatusSmall label="Rule-based status" value={props.analysis.overall_rule_status} severity={props.analysis.overall_rule_status} />
       <StatusSmall label="AI anomaly status" value={props.analysis.anomaly_flag} severity={props.analysis.anomaly_flag === "Anomaly" ? "Warning" : "Normal"} />
-      <StatusSmall label="Expert review" value={props.analysis.expert_review_required} severity={props.analysis.expert_review_required === "Yes" ? "Warning" : "Normal"} />
+      <StatusSmall label="Expert review status" value={props.caseItem?.status ?? (props.analysis.expert_review_required === "Yes" ? "Awaiting expert review" : "Not submitted")} severity={props.analysis.expert_review_required === "Yes" ? "Warning" : "Normal"} />
       <div className="status-panel">
         <span className="sidebar-label">Context</span>
         <strong>{displayTriggerSource(props.analysis.trigger_source)}</strong>
@@ -262,6 +275,8 @@ function BasicView(props: {
   selectedMetric: ChartMetric;
   setSelectedMetric: (metric: ChartMetric) => void;
   metricInfo: { key: ChartMetric; label: string; unit: string };
+  selectedPeriod: PeriodKey;
+  onPeriodChange: (period: PeriodKey) => void;
 }) {
   const metricCards: Array<{
     label: string;
@@ -291,15 +306,6 @@ function BasicView(props: {
       trendKey: "temperature_c"
     },
     {
-      label: "Oxygen",
-      value: props.analysis.oxygen_percent,
-      unit: "%",
-      status: props.analysis.oxygen_alert,
-      reference: props.metadata.rule_thresholds.oxygen.normal,
-      explanation: "Oxygen is checked directly against backend oxygen rules.",
-      trendKey: "oxygen_percent"
-    },
-    {
       label: "Methane",
       value: props.analysis.methane_percent,
       unit: "%",
@@ -307,6 +313,15 @@ function BasicView(props: {
       reference: props.metadata.rule_thresholds.methane.normal,
       explanation: "Methane concentration supports gas quality review.",
       trendKey: "methane_percent"
+    },
+    {
+      label: "Biogas yield",
+      value: props.analysis.biogas_yield_m3_per_ton,
+      unit: "m3/t",
+      status: props.analysis.anomaly_flag === "Anomaly" ? "Warning" : "Normal",
+      reference: "Model-derived engineered feature",
+      explanation: "Daily conversion efficiency indicator from feedstock to biogas output.",
+      trendKey: "biogas_yield_m3_per_ton"
     },
     {
       label: "H2S",
@@ -350,25 +365,12 @@ function BasicView(props: {
           selectedMetric={props.selectedMetric}
           setSelectedMetric={props.setSelectedMetric}
           metricInfo={props.metricInfo}
+          selectedPeriod={props.selectedPeriod}
+          onPeriodChange={props.onPeriodChange}
         />
       </div>
 
       <div className="advanced-section">
-        <section className="panel">
-          <div className="panel-header">
-            <div>
-              <h2>Executive summary</h2>
-              <p className="muted">Plain-language interpretation from the pipeline.</p>
-            </div>
-            <FileText size={20} aria-hidden="true" />
-          </div>
-          <div className="diagnostic-list">
-            <DiagnosticLine label="Issue category" value={props.analysis.possible_issue_category ?? "None"} />
-            <DiagnosticLine label="Explanation" value={props.analysis.short_explanation} />
-            <DiagnosticLine label="Recommended action" value={props.analysis.recommended_action} />
-          </div>
-        </section>
-
         <section className="panel">
           <div className="panel-header">
             <div>
@@ -384,7 +386,7 @@ function BasicView(props: {
             <Kpi label="Rule escalation rate" value={percent(props.kpis.ruleEscalationRate)} />
             <Kpi label="Expert-review count" value={String(props.kpis.expertReviewCount)} />
             <Kpi label="Maintenance overdue" value={String(props.kpis.maintenanceOverdueCount)} />
-            <Kpi label="Raw observations" value={String(props.periodHistory.length)} />
+            <Kpi label="Observations in period" value={String(props.periodHistory.length)} />
           </div>
         </section>
       </div>
@@ -454,6 +456,8 @@ function TrendPanel(props: {
   selectedMetric: ChartMetric;
   setSelectedMetric: (metric: ChartMetric) => void;
   metricInfo: { key: ChartMetric; label: string; unit: string };
+  selectedPeriod: PeriodKey;
+  onPeriodChange: (period: PeriodKey) => void;
 }) {
   const chartData = props.dailyData.map((item) => ({
     date: String(item.date),
@@ -464,16 +468,19 @@ function TrendPanel(props: {
 
   return (
     <section className="panel">
-      <div className="panel-header">
+      <div className="panel-header panel-header-wrap">
         <div>
-          <h2>Compact trends</h2>
-          <p className="muted">Daily mean with daily min/max range from raw workbook observations.</p>
+          <h2>Historical trends</h2>
+          <p className="muted">Daily mean with min/max range from selected period.</p>
         </div>
-        <select aria-label="Trend metric" value={props.selectedMetric} onChange={(event) => props.setSelectedMetric(event.target.value as ChartMetric)}>
-          {chartMetrics.map((metric) => (
-            <option key={metric.key} value={metric.key}>{metric.label}</option>
-          ))}
-        </select>
+        <div className="trend-controls">
+          <PeriodSelector value={props.selectedPeriod} onChange={props.onPeriodChange} compact />
+          <select aria-label="Trend metric" value={props.selectedMetric} onChange={(event) => props.setSelectedMetric(event.target.value as ChartMetric)}>
+            {chartMetrics.map((metric) => (
+              <option key={metric.key} value={metric.key}>{metric.label}</option>
+            ))}
+          </select>
+        </div>
       </div>
       <div className="chart-box">
         <ResponsiveContainer>
@@ -500,14 +507,14 @@ function AdvancedView(props: {
   selectedMetric: ChartMetric;
   setSelectedMetric: (metric: ChartMetric) => void;
   metricInfo: { key: ChartMetric; label: string; unit: string };
+  selectedPeriod: PeriodKey;
+  onPeriodChange: (period: PeriodKey) => void;
+  dailyData: DailyAggregate[];
+  kpis: PeriodKpis;
 }) {
   const diagnostics = props.analysis.diagnostics;
   const currentRuleBreakdown = ruleBreakdown(props.analysis);
-  const rawChartData = props.periodHistory.map((record) => ({
-    measurement_id: record.measurement_id,
-    value: record[props.selectedMetric],
-    date: record.date
-  }));
+  const rawChartData = props.periodHistory.map((record) => ({ measurement_id: record.measurement_id, value: record[props.selectedMetric], date: record.date }));
 
   const anomalyData = props.periodHistory.map((record) => ({ measurement_id: record.measurement_id, anomaly_score: record.anomaly_score }));
   anomalyData.push({ measurement_id: "Current", anomaly_score: props.analysis.anomaly_score });
@@ -525,6 +532,30 @@ function AdvancedView(props: {
 
   return (
     <div className="advanced-section">
+      <TrendPanel
+        dailyData={props.dailyData}
+        selectedMetric={props.selectedMetric}
+        setSelectedMetric={props.setSelectedMetric}
+        metricInfo={props.metricInfo}
+        selectedPeriod={props.selectedPeriod}
+        onPeriodChange={props.onPeriodChange}
+      />
+
+      <section className="panel">
+        <div className="panel-header">
+          <div>
+            <h2>Advanced KPI summary</h2>
+            <p className="muted">Technical summary for selected period.</p>
+          </div>
+        </div>
+        <div className="kpi-grid">
+          <Kpi label="Average methane" value={`${numberFormat(props.kpis.averageMethane, 1)}%`} />
+          <Kpi label="Average biogas yield" value={`${numberFormat(props.kpis.averageBiogasYield, 2)} m3/t`} />
+          <Kpi label="Average gas flow" value={`${numberFormat(props.kpis.averageGasFlow, 1)} m3/h`} />
+          <Kpi label="AI anomaly rate" value={percent(props.kpis.aiAnomalyRate)} />
+        </div>
+      </section>
+
       <div className="advanced-grid">
         <section className="panel">
           <div className="panel-header">
@@ -565,9 +596,6 @@ function AdvancedView(props: {
             <DiagnosticLine label="Trigger source" value={displayTriggerSource(props.analysis.trigger_source)} />
             <DiagnosticLine label="Expert review" value={props.analysis.expert_review_required} />
           </div>
-          <p className="muted" style={{ marginTop: 12 }}>
-            This score is not a probability or percentage and is not restricted to 0-1.
-          </p>
         </section>
 
         <section className="panel">
@@ -591,16 +619,19 @@ function AdvancedView(props: {
 
       <div className="advanced-grid">
         <section className="panel">
-          <div className="panel-header">
+          <div className="panel-header panel-header-wrap">
             <div>
-              <h2>Historical trend context</h2>
-              <p className="muted">Raw measurements ordered by date and measurement ID.</p>
+              <h2>Raw trend chart</h2>
+              <p className="muted">Measurement-level chart for technical inspection.</p>
             </div>
-            <select aria-label="Raw chart metric" value={props.selectedMetric} onChange={(event) => props.setSelectedMetric(event.target.value as ChartMetric)}>
-              {chartMetrics.map((metric) => (
-                <option key={metric.key} value={metric.key}>{metric.label}</option>
-              ))}
-            </select>
+            <div className="trend-controls">
+              <PeriodSelector value={props.selectedPeriod} onChange={props.onPeriodChange} compact />
+              <select aria-label="Raw chart metric" value={props.selectedMetric} onChange={(event) => props.setSelectedMetric(event.target.value as ChartMetric)}>
+                {chartMetrics.map((metric) => (
+                  <option key={metric.key} value={metric.key}>{metric.label}</option>
+                ))}
+              </select>
+            </div>
           </div>
           <div className="chart-box">
             <ResponsiveContainer>
@@ -640,7 +671,7 @@ function AdvancedView(props: {
           <div className="panel-header">
             <div>
               <h2>Rule breakdown</h2>
-              <p className="muted">Six rule cards summary with robust z-view.</p>
+              <p className="muted">Six-rule summary with robust z-view.</p>
             </div>
             <AlertTriangle size={18} aria-hidden="true" />
           </div>
