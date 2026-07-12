@@ -36,6 +36,7 @@ import {
 } from "recharts";
 import type {
   AnalysisResult,
+  AnalysisContext,
   ApiMetadata,
   ChartMetric,
   DashboardMode,
@@ -73,6 +74,7 @@ import {
   measurementFromHistory,
   validateMeasurement
 } from "./utils/measurements";
+import { isAiOnlyAnomaly } from "./utils/anomaly";
 import { generateHtmlReport } from "./utils/report";
 import {
   displayTriggerSource,
@@ -93,6 +95,14 @@ const periodLabels: Record<PeriodKey, string> = {
   all: "All data"
 };
 
+const buildInfo = {
+  appVersion: __APP_VERSION__,
+  commitSha: __GIT_COMMIT_SHA__,
+  commitRef: __GIT_COMMIT_REF__,
+  vercelEnv: __VERCEL_ENV__,
+  buildDate: __BUILD_DATE__
+};
+
 const ruleRows = [
   { key: "ph", alert: "ph_alert", label: "pH", value: "ph_value", unit: "pH" },
   { key: "temperature", alert: "temperature_alert", label: "Temperature", value: "temperature_c", unit: "deg C" },
@@ -101,6 +111,41 @@ const ruleRows = [
   { key: "h2s", alert: "h2s_alert", label: "H2S", value: "h2s_ppm", unit: "ppm" },
   { key: "maintenance", alert: "maintenance_alert", label: "Maintenance", value: "maintenance_status", unit: "" }
 ] as const;
+
+function contextFromRecord(record: HistoryRecord, scenario: ScenarioKey, sourceLabel: string): AnalysisContext {
+  return {
+    measurementId: record.measurement_id,
+    measurementDate: record.date,
+    plantId: record.plant_id,
+    scenarioLabel: scenarioLabels[scenario],
+    sourceLabel,
+    submittedAt: new Date().toISOString()
+  };
+}
+
+function contextFromCustom(sourceLabel: string): AnalysisContext {
+  return {
+    measurementId: "Custom input",
+    measurementDate: "Not from workbook history",
+    plantId: "Plant_01",
+    scenarioLabel: scenarioLabels.custom,
+    sourceLabel,
+    submittedAt: new Date().toISOString()
+  };
+}
+
+function formatTimestamp(value: string): string {
+  const timestamp = Date.parse(value);
+  if (Number.isNaN(timestamp)) {
+    return value;
+  }
+
+  return new Date(timestamp).toLocaleString();
+}
+
+function shortCommit(value: string): string {
+  return value === "local" ? value : value.slice(0, 12);
+}
 
 function App() {
   const persisted = useMemo(() => loadPersistedState(), []);
@@ -112,6 +157,7 @@ function App() {
   const [metadata, setMetadata] = useState<ApiMetadata>(fallbackMetadata);
   const [historyRecords, setHistoryRecords] = useState<HistoryRecord[]>([]);
   const [currentAnalysis, setCurrentAnalysis] = useState<AnalysisResult | null>(null);
+  const [analysisContext, setAnalysisContext] = useState<AnalysisContext | null>(null);
   const [dataSource, setDataSource] = useState<DataSourceState>("API unavailable");
   const [isApiConnected, setIsApiConnected] = useState(false);
   const [isAnalyzeAvailable, setIsAnalyzeAvailable] = useState(false);
@@ -144,10 +190,11 @@ function App() {
       scenario: selectedScenario,
       periodLabel: periodLabels[selectedPeriod],
       dataSource,
+      context: analysisContext,
       generatedAt: new Date().toISOString(),
       limitations: metadata.model_limitations
     });
-  }, [currentAnalysis, dataSource, kpis, metadata.model_limitations, periodHistory, selectedPeriod, selectedScenario]);
+  }, [analysisContext, currentAnalysis, dataSource, kpis, metadata.model_limitations, periodHistory, selectedPeriod, selectedScenario]);
   const reportHref = reportHtml ? `data:text/html;charset=utf-8,${encodeURIComponent(reportHtml)}` : "#";
 
   const applyStaticScenario = useCallback((records: HistoryRecord[], scenario: ScenarioKey) => {
@@ -162,18 +209,24 @@ function App() {
 
     setCurrentAnalysis(record);
     setFormState(measurementFromHistory(record));
+    setAnalysisContext(contextFromRecord(record, scenario, "Static workbook result - model was not re-executed"));
+    setDataSource("Static historical fallback");
     setAnnouncement(`${scenarioLabels[scenario]} loaded from historical workbook data.`);
   }, []);
 
   const runAnalysis = useCallback(async (
     measurement: PlantMeasurement,
     scenario: ScenarioKey,
-    fallbackRecord?: HistoryRecord
+    fallbackRecord?: HistoryRecord,
+    context?: AnalysisContext
   ) => {
     if (!isAnalyzeAvailable) {
       if (fallbackRecord) {
         setCurrentAnalysis(fallbackRecord);
         setDataSource("Static historical fallback");
+        setAnalysisContext(contextFromRecord(fallbackRecord, scenario, "Static workbook result - model was not re-executed"));
+      } else if (context) {
+        setAnalysisContext(context);
       }
       return;
     }
@@ -184,6 +237,7 @@ function App() {
       const result = await analyzeMeasurement(measurement);
       setCurrentAnalysis(result);
       setDataSource("Current analysis");
+      setAnalysisContext(context ?? contextFromCustom("Custom measurement submitted to live API"));
       setAnnouncement(`${scenarioLabels[scenario]} analyzed through the live API.`);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Analysis failed";
@@ -192,8 +246,10 @@ function App() {
       if (fallbackRecord) {
         setCurrentAnalysis(fallbackRecord);
         setDataSource("Static historical fallback");
+        setAnalysisContext(contextFromRecord(fallbackRecord, scenario, "Static workbook result - model was not re-executed"));
       } else {
         setDataSource("API unavailable");
+        setAnalysisContext(context ?? contextFromCustom("Custom measurement submitted to unavailable API"));
       }
     } finally {
       setIsAnalyzing(false);
@@ -220,7 +276,7 @@ function App() {
 
     const measurement = measurementFromHistory(record);
     setFormState(measurement);
-    await runAnalysis(measurement, scenario, record);
+    await runAnalysis(measurement, scenario, record, contextFromRecord(record, scenario, "Historical workbook measurement submitted to live API"));
   }, [historyRecords, lastCustomMeasurement, runAnalysis]);
 
   useEffect(() => {
@@ -256,11 +312,13 @@ function App() {
         if (record) {
           const measurement = measurementFromHistory(record);
           setFormState(measurement);
+          const nextContext = contextFromRecord(record, scenario, "Historical workbook measurement submitted to live API");
           try {
             const result = await analyzeMeasurement(measurement);
             if (!cancelled) {
               setCurrentAnalysis(result);
               setDataSource("Current analysis");
+              setAnalysisContext(nextContext);
               setAnnouncement(`${scenarioLabels[scenario]} analyzed through the live API.`);
             }
           } catch (analysisError) {
@@ -269,6 +327,7 @@ function App() {
               setIsAnalyzeAvailable(false);
               setCurrentAnalysis(record);
               setDataSource("Static historical fallback");
+              setAnalysisContext(contextFromRecord(record, scenario, "Static workbook result - model was not re-executed"));
             }
           }
         }
@@ -330,7 +389,7 @@ function App() {
     setFormState(measurement);
     setLastCustomMeasurement(measurement);
     setSelectedScenario("custom");
-    await runAnalysis(measurement, "custom");
+    await runAnalysis(measurement, "custom", undefined, contextFromCustom("Custom measurement submitted to live API"));
     closeDrawer();
   }
 
@@ -423,6 +482,8 @@ function App() {
         <div className="sr-only" aria-live="polite">{announcement}</div>
 
         <StatusStrip analysis={currentAnalysis} dataSource={dataSource} unifiedStatus={unifiedStatus} />
+        <DataContextPanel context={analysisContext} metadata={metadata} />
+        {isAiOnlyAnomaly(currentAnalysis) && <AiOnlyAnomalyBanner analysis={currentAnalysis} metadata={metadata} />}
 
         {mode === "Normal" ? (
           <NormalMode
@@ -468,9 +529,7 @@ function App() {
           </div>
         </section>
 
-        <p style={{ marginTop: 14 }}>
-          <a href="/legacy/index.html" className="muted">Legacy workflow prototype</a>
-        </p>
+        <BuildInfoFooter />
       </main>
 
       {drawerOpen && formState && (
@@ -582,6 +641,85 @@ function DataSourceIndicator(props: {
   );
 }
 
+function DataContextPanel(props: {
+  context: AnalysisContext | null;
+  metadata: ApiMetadata;
+}) {
+  const context = props.context ?? {
+    measurementId: "Unknown",
+    measurementDate: "Unknown",
+    plantId: "Plant_01",
+    scenarioLabel: "Current measurement",
+    sourceLabel: "Analysis context is being prepared",
+    submittedAt: new Date().toISOString()
+  };
+
+  return (
+    <section className="context-panel" aria-label="Current data context">
+      <div>
+        <span className="sidebar-label">Current data context</span>
+        <h2>{context.scenarioLabel}</h2>
+        <p className="muted">{context.sourceLabel}</p>
+      </div>
+      <div className="context-items">
+        <ContextItem label="Measurement ID" value={context.measurementId} />
+        <ContextItem label="Measurement date" value={context.measurementDate} />
+        <ContextItem label="Plant" value={context.plantId} />
+        <ContextItem label="Model scope" value={props.metadata.model_scope} />
+        <ContextItem label="History rows" value={String(props.metadata.historical_row_count)} />
+        <ContextItem label="Submitted" value={formatTimestamp(context.submittedAt)} />
+      </div>
+    </section>
+  );
+}
+
+function ContextItem(props: { label: string; value: string }) {
+  return (
+    <div className="context-item">
+      <span>{props.label}</span>
+      <strong>{props.value}</strong>
+    </div>
+  );
+}
+
+function AiOnlyAnomalyBanner(props: {
+  analysis: AnalysisResult;
+  metadata: ApiMetadata;
+}) {
+  const distance = props.analysis.anomaly_score - props.metadata.anomaly_threshold;
+
+  return (
+    <section className="ai-only-banner" aria-label="AI-only anomaly explanation">
+      <div className="ai-only-heading">
+        <div>
+          <span className="sidebar-label">AI-only anomaly</span>
+          <h2>No deterministic rule threshold was crossed</h2>
+          <p>
+            All six rule checks are Normal. The Isolation Forest flagged this measurement because the combined
+            process pattern is unusual relative to the Plant_01 workbook history.
+          </p>
+        </div>
+        <BrainCircuit size={30} aria-hidden="true" />
+      </div>
+      <div className="ai-only-facts">
+        <ContextItem label="Rule-based status" value={props.analysis.overall_rule_status} />
+        <ContextItem label="AI anomaly status" value={props.analysis.anomaly_flag} />
+        <ContextItem label="Signed score" value={numberFormat(props.analysis.anomaly_score, 5)} />
+        <ContextItem label="Threshold" value={numberFormat(props.metadata.anomaly_threshold, 0)} />
+        <ContextItem label="Distance above threshold" value={numberFormat(distance, 5)} />
+        <ContextItem label="Trigger source" value={displayTriggerSource(props.analysis.trigger_source)} />
+      </div>
+      <p>
+        <strong>{props.analysis.possible_issue_category ?? "Unusual process relationship"}:</strong>{" "}
+        {props.analysis.short_explanation}
+      </p>
+      <p>
+        <strong>Recommended action:</strong> {props.analysis.recommended_action}
+      </p>
+    </section>
+  );
+}
+
 function StatusStrip(props: {
   analysis: AnalysisResult;
   unifiedStatus: Severity;
@@ -658,6 +796,15 @@ function NormalMode(props: {
       trendKey: "temperature_c" as ChartMetric
     },
     {
+      label: "Oxygen",
+      value: props.analysis.oxygen_percent,
+      unit: "%",
+      status: props.analysis.oxygen_alert,
+      reference: props.metadata.rule_thresholds.oxygen.normal,
+      explanation: "Oxygen is checked directly against backend oxygen rules.",
+      trendKey: "oxygen_percent" as ChartMetric
+    },
+    {
       label: "Methane",
       value: props.analysis.methane_percent,
       unit: "%",
@@ -665,15 +812,6 @@ function NormalMode(props: {
       reference: props.metadata.rule_thresholds.methane.normal,
       explanation: "Methane concentration supports gas quality review.",
       trendKey: "methane_percent" as ChartMetric
-    },
-    {
-      label: "Biogas yield",
-      value: props.analysis.biogas_yield_m3_per_ton,
-      unit: "m3/t",
-      status: !props.analysis.diagnostics || props.analysis.diagnostics.robust_metrics.biogas_yield_m3_per_ton.deviation === "Normal" ? "Normal" : "Warning",
-      reference: "Compared with interpretation-reference baseline",
-      explanation: "Yield is interpreted through robust historical deviation, not a deterministic rule.",
-      trendKey: "biogas_yield_m3_per_ton" as ChartMetric
     },
     {
       label: "H2S",
@@ -872,6 +1010,8 @@ function AdvancedMode(props: {
   metricInfo: { key: ChartMetric; label: string; unit: string };
 }) {
   const diagnostics = props.analysis.diagnostics;
+  const currentRuleBreakdown = ruleBreakdown(props.analysis);
+  const ruleCountSummary = currentRuleBreakdown.map((item) => `${item.status}: ${item.count}`).join(" | ");
   const rawChartData = props.periodHistory.map((record) => ({
     measurement_id: record.measurement_id,
     value: record[props.selectedMetric],
@@ -911,6 +1051,11 @@ function AdvancedMode(props: {
               <p className="muted">Exact backend rule outputs and thresholds.</p>
             </div>
           </div>
+          <p className="analysis-note">
+            Rule-based monitoring and Isolation Forest answer different questions. Rule checks test individual
+            operating limits; Isolation Forest evaluates the combined process pattern.
+          </p>
+          <p className="muted" style={{ marginBottom: 10 }}>Current rule count summary: {ruleCountSummary}.</p>
           <div className="rule-list">
             {ruleRows.map((rule) => {
               const status = props.analysis[rule.alert] as Severity;
@@ -1037,7 +1182,7 @@ function AdvancedMode(props: {
           </div>
           <div className="chart-box" style={{ height: 160 }}>
             <ResponsiveContainer>
-              <BarChart data={ruleBreakdown(props.analysis)} margin={{ left: 8, right: 16, top: 8, bottom: 8 }}>
+              <BarChart data={currentRuleBreakdown} margin={{ left: 8, right: 16, top: 8, bottom: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#dfe7e9" />
                 <XAxis dataKey="status" tick={{ fontSize: 11 }} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
@@ -1077,6 +1222,22 @@ function Kpi(props: { label: string; value: string }) {
       <span className="muted">{props.label}</span>
       <strong>{props.value}</strong>
     </div>
+  );
+}
+
+function BuildInfoFooter() {
+  return (
+    <footer className="build-footer" aria-label="Build and legacy links">
+      <div>
+        <strong>Model-backed React dashboard</strong>
+        <span>Version {buildInfo.appVersion}</span>
+        <span>Commit {shortCommit(buildInfo.commitSha)}</span>
+        <span>Branch {buildInfo.commitRef}</span>
+        <span>Environment {buildInfo.vercelEnv}</span>
+        <span>Built {formatTimestamp(buildInfo.buildDate)}</span>
+      </div>
+      <a href="/legacy/" className="muted">Legacy static workflow prototype</a>
+    </footer>
   );
 }
 

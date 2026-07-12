@@ -3,7 +3,8 @@ import historyPayload from "../../public/data/dashboard-history.json";
 import type { AnalysisResult, HistoryRecord, PlantMeasurement } from "../../src/types/smartcontrol";
 import { apiUrl, getStaticHistory } from "../../src/services/api";
 import { loadPersistedState, savePersistedState, STORAGE_KEY } from "../../src/services/storage";
-import { aggregateDaily, getScenarioRecord, selectPeriod } from "../../src/utils/history";
+import { deterministicRuleStatuses, isAiOnlyAnomaly } from "../../src/utils/anomaly";
+import { aggregateDaily, getScenarioRecord, ruleBreakdown, selectPeriod } from "../../src/utils/history";
 import { measurementFromHistory, validateMeasurement } from "../../src/utils/measurements";
 import { generateHtmlReport } from "../../src/utils/report";
 import { getUnifiedStatus } from "../../src/utils/status";
@@ -45,6 +46,20 @@ describe("dashboard status and history logic", () => {
     expect(getScenarioRecord(records, "latest")?.measurement_id).toBe("M0600");
     expect(getScenarioRecord(records, "ai-anomaly")?.measurement_id).toBe("M0123");
     expect(getScenarioRecord(records, "critical-rule")?.measurement_id).toBe("M0128");
+  });
+
+  it("keeps M0123 as an unmistakable AI-only anomaly", () => {
+    expect(anomaly.overall_rule_status).toBe("Normal");
+    expect(anomaly.anomaly_flag).toBe("Anomaly");
+    expect(anomaly.trigger_source).toBe("Isolation Forest");
+    expect(anomaly.anomaly_score).toBeGreaterThan(0);
+    expect(deterministicRuleStatuses(anomaly).every((status) => status === "Normal")).toBe(true);
+    expect(isAiOnlyAnomaly(anomaly)).toBe(true);
+    expect(ruleBreakdown(anomaly)).toEqual([
+      { status: "Normal", count: 6 },
+      { status: "Warning", count: 0 },
+      { status: "Critical", count: 0 }
+    ]);
   });
 });
 
@@ -113,13 +128,30 @@ describe("report generation", () => {
       scenario: "ai-anomaly",
       periodLabel: "30 available days",
       dataSource: "Current analysis",
+      context: {
+        measurementId: "M0123",
+        measurementDate: anomaly.date,
+        plantId: anomaly.plant_id,
+        scenarioLabel: "AI anomaly example",
+        sourceLabel: "Historical workbook measurement submitted to live API",
+        submittedAt: "2026-07-12T00:00:00.000Z"
+      },
       generatedAt: "2026-07-12T00:00:00.000Z",
       limitations: ["A detected anomaly is not a confirmed diagnosis."]
     });
 
     expect(html).toContain("Complete API Response Appendix");
+    expect(html).toContain("Current Data Context");
+    expect(html).toContain("AI-only anomaly");
+    expect(html).toContain("No individual deterministic rule threshold was crossed");
+    expect(html).toContain("Rule-Based Status");
+    expect(html).toContain("AI Anomaly");
+    expect(html).toContain("Isolation Forest");
     expect(html).toContain("Signed Isolation Forest decision score");
     expect(html).toContain("threshold");
+    expect(html).not.toContain("47.6%");
+    expect(html).not.toContain("940 ppm");
+    expect(html).not.toContain("3 elevated values");
     expect(html).not.toContain("82%");
     expect(html).not.toContain("confidence");
   });

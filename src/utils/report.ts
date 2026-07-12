@@ -1,4 +1,5 @@
-import type { AnalysisResult, HistoryRecord, PeriodKpis, ScenarioKey } from "../types/smartcontrol";
+import type { AnalysisContext, AnalysisResult, HistoryRecord, PeriodKpis, ScenarioKey } from "../types/smartcontrol";
+import { isAiOnlyAnomaly } from "./anomaly";
 import { compactNumber, numberFormat, percent } from "./format";
 import { getUnifiedStatus } from "./status";
 import { measurementFields } from "./measurements";
@@ -24,12 +25,15 @@ export function generateHtmlReport(args: {
   scenario: ScenarioKey;
   periodLabel: string;
   dataSource: string;
+  context?: AnalysisContext | null;
   generatedAt: string;
   limitations: string[];
 }): string {
-  const { analysis, history, kpis, scenario, periodLabel, dataSource, generatedAt, limitations } = args;
+  const { analysis, context, history, kpis, scenario, periodLabel, dataSource, generatedAt, limitations } = args;
   const unifiedStatus = getUnifiedStatus(analysis);
   const diagnostics = analysis.diagnostics;
+  const anomalyThreshold = diagnostics?.anomaly_threshold ?? 0;
+  const aiOnly = isAiOnlyAnomaly(analysis);
   const recentRows = history.slice(-15);
 
   const inputRows = measurementFields
@@ -64,6 +68,15 @@ export function generateHtmlReport(args: {
     ))
     .join("");
 
+  const contextRows = context ? rowsFromObject({
+    measurement_id: context.measurementId,
+    measurement_date: context.measurementDate,
+    plant_id: context.plantId,
+    scenario_label: context.scenarioLabel,
+    source: context.sourceLabel,
+    submitted_at: context.submittedAt
+  }) : "";
+
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -82,6 +95,7 @@ export function generateHtmlReport(args: {
     th{color:#4f5e63;width:30%}
     .status{display:inline-block;border-radius:99px;padding:4px 10px;font-weight:700}
     .Normal{background:#e4f7ed;color:#0f6b3b}.Warning{background:#fff4d7;color:#8a5a00}.Critical{background:#fde8e5;color:#9d1f16}
+    .callout{background:#fff9e9;border-color:#eedaa8;color:#513a04}
     pre{white-space:pre-wrap;background:#f1f5f6;padding:12px;border-radius:6px;overflow:auto}
     @media print{body{background:#fff}main{max-width:none;padding:0}section{break-inside:avoid}}
   </style>
@@ -97,6 +111,8 @@ export function generateHtmlReport(args: {
       <h2>Executive Summary</h2>
       <p><span class="status ${unifiedStatus}">${unifiedStatus}</span></p>
       <table>${rowsFromObject({
+        "Rule-Based Status": analysis.overall_rule_status,
+        "AI Anomaly": analysis.anomaly_flag,
         possible_issue_category: analysis.possible_issue_category ?? "None",
         short_explanation: analysis.short_explanation,
         recommended_action: analysis.recommended_action,
@@ -104,6 +120,15 @@ export function generateHtmlReport(args: {
         trigger_source: analysis.trigger_source ?? "None"
       })}</table>
     </section>
+    ${contextRows ? `<section><h2>Current Data Context</h2><table>${contextRows}</table></section>` : ""}
+    ${aiOnly ? `<section class="callout"><h2>AI-only anomaly</h2><p>No individual deterministic rule threshold was crossed. The anomaly was raised by the multivariate Isolation Forest model.</p><table>${rowsFromObject({
+      "Rule-Based Status": analysis.overall_rule_status,
+      "AI Anomaly": analysis.anomaly_flag,
+      "Trigger Source": analysis.trigger_source ?? "None",
+      "Signed Score": numberFormat(analysis.anomaly_score, 5),
+      Threshold: numberFormat(anomalyThreshold, 0),
+      "Distance Above Threshold": numberFormat(analysis.anomaly_score - anomalyThreshold, 5)
+    })}</table></section>` : ""}
     <section>
       <h2>Period KPIs</h2>
       <table>${rowsFromObject({
@@ -136,7 +161,8 @@ export function generateHtmlReport(args: {
       <h2>Isolation Forest</h2>
       <table>${rowsFromObject({
         raw_anomaly_score: numberFormat(analysis.anomaly_score, 4),
-        threshold: 0,
+        threshold: anomalyThreshold,
+        distance_above_threshold: numberFormat(analysis.anomaly_score - anomalyThreshold, 4),
         anomaly_flag: analysis.anomaly_flag,
         trigger_source: analysis.trigger_source ?? "None",
         expert_review_required: analysis.expert_review_required

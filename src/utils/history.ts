@@ -9,6 +9,7 @@ import type {
 export const chartMetrics: Array<{ key: ChartMetric; label: string; unit: string }> = [
   { key: "ph_value", label: "pH", unit: "pH" },
   { key: "temperature_c", label: "Temperature", unit: "deg C" },
+  { key: "oxygen_percent", label: "Oxygen", unit: "%" },
   { key: "methane_percent", label: "Methane", unit: "%" },
   { key: "h2s_ppm", label: "H2S", unit: "ppm" },
   { key: "gas_flow_m3_h", label: "Gas flow", unit: "m3/h" },
@@ -85,6 +86,7 @@ export function aggregateDaily(records: HistoryRecord[]): DailyAggregate[] {
         count: group.length,
         ph_value: average(group.map((record) => record.ph_value)),
         temperature_c: average(group.map((record) => record.temperature_c)),
+        oxygen_percent: average(group.map((record) => record.oxygen_percent)),
         methane_percent: average(group.map((record) => record.methane_percent)),
         h2s_ppm: average(group.map((record) => record.h2s_ppm)),
         gas_flow_m3_h: average(group.map((record) => record.gas_flow_m3_h)),

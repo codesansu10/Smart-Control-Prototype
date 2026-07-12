@@ -253,6 +253,8 @@ p {
 
 .panel,
 .metric-card,
+.context-panel,
+.ai-only-banner,
 .status-panel {
   background: #ffffff;
   border: 1px solid #dce5e7;
@@ -269,6 +271,73 @@ p {
 
 .status-panel.primary-status {
   background: linear-gradient(180deg, #ffffff 0%, #f3fbfa 100%);
+}
+
+.context-panel {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.7fr) minmax(0, 1.3fr);
+  gap: 16px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.context-items,
+.ai-only-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.context-item {
+  min-width: 0;
+  border: 1px solid #e1e8ea;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fbfdfd;
+}
+
+.context-item span {
+  display: block;
+  color: #68777d;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.context-item strong {
+  display: block;
+  color: #112f3a;
+  overflow-wrap: anywhere;
+  margin-top: 4px;
+}
+
+.ai-only-banner {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  margin-bottom: 14px;
+  background: #fff9e9;
+  border-color: #eedaa8;
+}
+
+.ai-only-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  color: #513a04;
+}
+
+.ai-only-heading h2 {
+  color: #513a04;
+}
+
+.analysis-note {
+  border: 1px solid #d5e7ef;
+  border-radius: 8px;
+  background: #f1f9fc;
+  color: #244d5c;
+  padding: 10px;
+  margin-bottom: 10px;
 }
 
 .status-value {
@@ -524,6 +593,28 @@ th {
   flex-wrap: wrap;
 }
 
+.build-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #dce5e7;
+  color: #64757b;
+  font-size: 13px;
+}
+
+.build-footer div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+
+.build-footer strong {
+  color: #253941;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -542,6 +633,7 @@ th {
   }
 
   .dashboard-grid,
+  .context-panel,
   .advanced-grid {
     grid-template-columns: 1fr;
   }
@@ -572,15 +664,23 @@ th {
   }
 
   .metric-grid,
+  .context-items,
+  .ai-only-facts,
   .kpi-grid,
   .form-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .build-footer {
+    flex-direction: column;
   }
 }
 
 @media (max-width: 640px) {
   .status-grid,
   .metric-grid,
+  .context-items,
+  .ai-only-facts,
   .kpi-grid,
   .form-grid {
     grid-template-columns: 1fr;

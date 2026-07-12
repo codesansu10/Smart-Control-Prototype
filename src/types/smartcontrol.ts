@@ -9,6 +9,15 @@ export type DataSourceState =
   | "API unavailable"
   | "Current analysis";
 
+export interface AnalysisContext {
+  measurementId: string;
+  measurementDate: string;
+  plantId: string;
+  scenarioLabel: string;
+  sourceLabel: string;
+  submittedAt: string;
+}
+
 export interface PlantMeasurement {
   feedstock_input_tons: number;
   carbohydrate_percent: number;
@@ -162,6 +171,7 @@ export interface DailyAggregate {
   count: number;
   ph_value: number;
   temperature_c: number;
+  oxygen_percent: number;
   methane_percent: number;
   h2s_ppm: number;
   gas_flow_m3_h: number;
@@ -176,6 +186,7 @@ export interface DailyAggregate {
 export type ChartMetric =
   | "ph_value"
   | "temperature_c"
+  | "oxygen_percent"
   | "methane_percent"
   | "h2s_ppm"
   | "gas_flow_m3_h"

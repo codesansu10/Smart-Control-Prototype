@@ -219,6 +219,26 @@ def test_golden_records(history_records, measurement_id, rule_status, anomaly_fl
     assert payload["anomaly_score"] == pytest.approx(score, abs=1e-6)
 
 
+def test_m0123_is_ai_only_anomaly(history_records):
+    response = client.post("/api/analyze", json=measurement(history_records, "M0123"))
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["overall_rule_status"] == "Normal"
+    for alert_name in (
+        "ph_alert",
+        "temperature_alert",
+        "oxygen_alert",
+        "methane_alert",
+        "h2s_alert",
+        "maintenance_alert",
+    ):
+        assert payload[alert_name] == "Normal"
+    assert payload["anomaly_flag"] == "Anomaly"
+    assert payload["trigger_source"] == "Isolation Forest"
+    assert payload["anomaly_score"] > payload["diagnostics"]["anomaly_threshold"]
+
+
 def test_cached_history_payload():
     payload = get_history_payload()
 
