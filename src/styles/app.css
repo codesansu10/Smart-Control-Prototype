@@ -140,6 +140,16 @@ button:disabled {
   border-color: #008eca;
 }
 
+.segmented-compact {
+  gap: 6px;
+}
+
+.segmented-compact button {
+  padding: 6px 9px;
+  min-height: 34px;
+  font-size: 12px;
+}
+
 .primary-button {
   background: #008eca;
   border-color: #008eca;
@@ -386,6 +396,11 @@ p {
   margin-bottom: 12px;
 }
 
+.panel-header-wrap {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -427,6 +442,10 @@ p {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+}
+
+.kpi-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .kpi {
@@ -591,6 +610,12 @@ th {
   gap: 14px;
 }
 
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
 .row-active {
   background: #f1f9fc;
 }
@@ -601,6 +626,67 @@ th {
   color: #0a6f9f;
   font-weight: 800;
   padding: 0;
+}
+
+.table-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.advanced-row-details {
+  display: grid;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.pagination-bar {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.pagination-meta {
+  color: #51656c;
+  font-weight: 700;
+}
+
+.field-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #51656c;
+}
+
+.field-inline select {
+  min-height: 34px;
+}
+
+.trend-controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.section-panel {
+  box-shadow: none;
+  padding: 12px;
+}
+
+.details-panel {
+  border: 1px solid #dce5e7;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fff;
+}
+
+.details-panel summary {
+  cursor: pointer;
+  font-weight: 800;
 }
 
 .messages-layout {
@@ -821,6 +907,11 @@ th {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .summary-grid,
+  .kpi-grid-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .build-footer {
     flex-direction: column;
   }
@@ -833,6 +924,11 @@ th {
   .ai-only-facts,
   .kpi-grid,
   .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-grid,
+  .kpi-grid-3 {
     grid-template-columns: 1fr;
   }
 

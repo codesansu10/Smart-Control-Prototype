@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import historyPayload from "../../public/data/dashboard-history.json";
 import legacyHtml from "../../public/legacy/index.html?raw";
 import appSource from "../../src/App.tsx?raw";
+import dashboardSource from "../../src/components/DashboardView.tsx?raw";
 import type { AnalysisResult, HistoryRecord, PlantMeasurement } from "../../src/types/smartcontrol";
 import { apiUrl, getStaticHistory } from "../../src/services/api";
 import { getDefaultPersistedState, loadPersistedState, resetWorkflowState, savePersistedState, STORAGE_KEY } from "../../src/services/storage";
@@ -13,10 +14,16 @@ import { generateHtmlReport } from "../../src/utils/report";
 import { getUnifiedStatus } from "../../src/utils/status";
 import { Sidebar } from "../../src/components/Sidebar";
 import { appendMessage, availableMonths, createAnomalyThread, createReportThread, createTextMessage, markThreadRead, monthlyStats } from "../../src/utils/workflow";
+import { MeasurementDrawer } from "../../src/components/MeasurementDrawer";
+import { AnomalyDetectionView } from "../../src/components/AnomalyDetectionView";
+import { MessagesView } from "../../src/components/MessagesView";
+import { MonthlyReportView } from "../../src/components/MonthlyReportView";
 
 const records = historyPayload.records as HistoryRecord[];
 const latest = records.find((record) => record.measurement_id === "M0600")!;
 const anomaly = records.find((record) => record.measurement_id === "M0123")!;
+const critical = records.find((record) => record.measurement_id === "M0128")!;
+const normal = records.find((record) => record.measurement_id !== "M0123" && record.measurement_id !== "M0128" && record.anomaly_flag === "Normal" && record.overall_rule_status === "Normal" && record.expert_review_required === "No")!;
 
 function measurement(record: HistoryRecord): PlantMeasurement {
   return measurementFromHistory(record);
@@ -75,20 +82,15 @@ describe("dashboard status and history logic", () => {
   });
 });
 
-describe("role navigation and detail mode", () => {
-  it("shows role-specific navigation", () => {
+describe("sidebar and user menu", () => {
+  it("shows role-specific navigation only and hides period/scenario controls", () => {
     const noop = vi.fn();
-    const { rerender } = render(
+    render(
       <Sidebar
         role="operator"
         mode="Basic"
-        selectedPeriod="30"
-        selectedScenario="latest"
         activeModule="dashboard"
-        isAnalyzing={false}
         onModeChange={noop}
-        onPeriodChange={noop}
-        onScenarioChange={noop}
         onModuleChange={noop}
         onRoleChange={noop}
         onResetData={noop}
@@ -97,19 +99,19 @@ describe("role navigation and detail mode", () => {
     );
 
     expect(screen.getByText("Dashboard")).not.toBeNull();
-    expect(screen.queryByText("Review Queue")).toBeNull();
+    expect(screen.queryByText("Period")).toBeNull();
+    expect(screen.queryByText("Scenario")).toBeNull();
+    expect(screen.queryByText("Detail level")).toBeNull();
+  });
 
-    rerender(
+  it("keeps Basic and Advanced in the user menu", () => {
+    const noop = vi.fn();
+    render(
       <Sidebar
-        role="expert"
-        mode="Advanced"
-        selectedPeriod="30"
-        selectedScenario="latest"
-        activeModule="review-queue"
-        isAnalyzing={false}
+        role="operator"
+        mode="Basic"
+        activeModule="dashboard"
         onModeChange={noop}
-        onPeriodChange={noop}
-        onScenarioChange={noop}
         onModuleChange={noop}
         onRoleChange={noop}
         onResetData={noop}
@@ -117,8 +119,159 @@ describe("role navigation and detail mode", () => {
       />
     );
 
-    expect(screen.getByText("Review Queue")).not.toBeNull();
-    expect(screen.queryByText("Dashboard")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Julia User/i }));
+    expect(screen.getByText("Switch user")).not.toBeNull();
+    expect(screen.getByRole("button", { name: /Basic/i })).not.toBeNull();
+    expect(screen.getByRole("button", { name: /Advanced/i })).not.toBeNull();
+  });
+});
+
+describe("analyze drawer and anomaly list", () => {
+  it("shows the three example scenarios in analyze drawer", () => {
+    render(
+      <MeasurementDrawer
+        initialMeasurement={measurement(latest)}
+        metadata={{
+          model_feature_names: [],
+          engineered_feature_names: [],
+          model_feature_names_engineered: [],
+          rule_alert_names: [],
+          rule_thresholds: {} as never,
+          anomaly_threshold: 0,
+          robust_z_score_threshold: 2.5,
+          isolation_forest_contamination: 0.01,
+          supported_maintenance_status_values: ["none", "recent", "overdue"],
+          model_scope: "Plant_01",
+          model_limitations: [],
+          dataset_date_range: { start: "2026-01-01", end: "2026-04-30" },
+          historical_row_count: 600
+        }}
+        onClose={vi.fn()}
+        onSubmit={async () => {}}
+        isAnalyzing={false}
+        loadScenario={async () => {}}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: "Latest measurement" })).not.toBeNull();
+    expect(screen.getByRole("button", { name: "AI-only anomaly example" })).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Critical rule example" })).not.toBeNull();
+  });
+
+  it("defaults to needs-attention records and supports all measurements filter", () => {
+    render(
+      <AnomalyDetectionView
+        mode="Basic"
+        records={[normal, anomaly, critical]}
+        selectedPeriod="7"
+        onPeriodChange={vi.fn()}
+        selectedMeasurementId={anomaly.measurement_id}
+        currentAnalysis={anomaly}
+        anomalyCases={{}}
+        onSelectMeasurement={vi.fn()}
+        onSubmitForReview={vi.fn()}
+        onSendToMessages={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByText(normal.measurement_id)).toBeNull();
+    expect(screen.getByText(anomaly.measurement_id)).not.toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: /All measurements/i }));
+    expect(screen.getByText(normal.measurement_id)).not.toBeNull();
+  });
+
+  it("paginates to 10 rows and uses per-row case status", () => {
+    const items = Array.from({ length: 12 }, (_, index) => ({
+      ...anomaly,
+      measurement_id: `M9${String(index).padStart(3, "0")}`,
+      date: "2026-04-30"
+    }));
+    const anomalyCases = {
+      [items[0].measurement_id]: {
+        measurementId: items[0].measurement_id,
+        note: "",
+        status: "Awaiting expert review" as const,
+        expertDecision: null,
+        expertReply: "",
+        operatorMeasures: "",
+        conversationId: null,
+        updatedAt: new Date().toISOString()
+      },
+      [items[1].measurement_id]: {
+        measurementId: items[1].measurement_id,
+        note: "",
+        status: "False alarm" as const,
+        expertDecision: "False alarm" as const,
+        expertReply: "",
+        operatorMeasures: "",
+        conversationId: null,
+        updatedAt: new Date().toISOString()
+      }
+    };
+
+    render(
+      <AnomalyDetectionView
+        mode="Basic"
+        records={items}
+        selectedPeriod="7"
+        onPeriodChange={vi.fn()}
+        selectedMeasurementId={items[0].measurement_id}
+        currentAnalysis={anomaly}
+        anomalyCases={anomalyCases}
+        onSelectMeasurement={vi.fn()}
+        onSubmitForReview={vi.fn()}
+        onSendToMessages={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("Showing 1–10 of 12 attention records")).not.toBeNull();
+    expect(screen.getByText("Page 1 of 2")).not.toBeNull();
+    expect(screen.queryByText(items[10].measurement_id)).toBeNull();
+    expect(screen.getByText("Awaiting expert review")).not.toBeNull();
+    expect(screen.getByText("False alarm")).not.toBeNull();
+  });
+});
+
+describe("messages and monthly report focus", () => {
+  it("messages view does not show period/scenario controls", () => {
+    render(
+      <MessagesView
+        role="operator"
+        threads={[]}
+        activeThreadId={null}
+        onSelectThread={vi.fn()}
+        onSendMessage={vi.fn()}
+        onCreateThread={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("No conversations yet")).not.toBeNull();
+    expect(screen.queryByText("Period")).toBeNull();
+    expect(screen.queryByText("Scenario")).toBeNull();
+  });
+
+  it("monthly report shows aggregated monthly summary", () => {
+    render(
+      <MonthlyReportView
+        role="operator"
+        records={records}
+        availableMonths={["2026-04"]}
+        selectedMonth="2026-04"
+        report={null}
+        onSelectMonth={vi.fn()}
+        onGenerate={vi.fn()}
+        onSaveReport={vi.fn()}
+        onSendForReview={vi.fn()}
+        onApprove={vi.fn()}
+        onRequestChanges={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("Total measurements")).not.toBeNull();
+    expect(screen.getByText("Issue-category breakdown")).not.toBeNull();
+    expect(screen.getByText("Trigger-source breakdown")).not.toBeNull();
+    expect(screen.getByText("Important anomaly list")).not.toBeNull();
   });
 });
 
@@ -149,6 +302,7 @@ describe("message and workflow utilities", () => {
     const stats = monthlyStats(records, "2026-04");
     expect(stats.total).toBeGreaterThan(0);
     expect(stats.averageMethane).toBeGreaterThan(0);
+    expect(stats.importantRecords.length).toBeLessThanOrEqual(10);
   });
 });
 
@@ -274,6 +428,7 @@ describe("versioned workflow persistence", () => {
     expect(state.role).toBe("expert");
     expect(state.mode).toBe("Advanced");
     expect(state.activeModule).toBe("messages");
+    expect(state.selectedPeriod).toBe("7");
 
     const reset = resetWorkflowState();
     expect(reset.role).toBe("operator");
@@ -287,5 +442,6 @@ describe("legacy archival paths", () => {
     expect(appSource).not.toContain("940 ppm");
     expect(legacyHtml).toContain("Archived static workflow prototype");
     expect(legacyHtml).toContain("Open current model-backed dashboard");
+    expect(dashboardSource).not.toContain("<table>");
   });
 });

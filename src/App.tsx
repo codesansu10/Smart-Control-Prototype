@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Activity, Loader2, RefreshCw, SlidersHorizontal, X } from "lucide-react";
+import { RefreshCw, SlidersHorizontal, Loader2 } from "lucide-react";
 import type {
   AnalysisContext,
   AnalysisResult,
@@ -12,11 +12,10 @@ import type {
 } from "./types/smartcontrol";
 import { analyzeMeasurement, getHealth, getHistory, getMetadata, getStaticHistory } from "./services/api";
 import { getDefaultPersistedState } from "./services/storage";
-import { useEscapeKey } from "./hooks/useEscapeKey";
 import { useWorkflowState } from "./hooks/useWorkflowState";
 import { fallbackMetadata } from "./utils/defaults";
 import { aggregateDaily, calculatePeriodKpis, getScenarioRecord, selectPeriod } from "./utils/history";
-import { measurementFields, measurementFromHistory, validateMeasurement } from "./utils/measurements";
+import { measurementFromHistory, validateMeasurement } from "./utils/measurements";
 import { generateHtmlReport } from "./utils/report";
 import { Sidebar } from "./components/Sidebar";
 import { DashboardView, DataSourceIndicator } from "./components/DashboardView";
@@ -24,7 +23,20 @@ import { AnomalyDetectionView } from "./components/AnomalyDetectionView";
 import { MonthlyReportView } from "./components/MonthlyReportView";
 import { MessagesView } from "./components/MessagesView";
 import { ReviewQueueView } from "./components/ReviewQueueView";
-import { appendMessage, availableMonths, createAnomalyThread, createReportThread, createTextMessage, findCaseForMeasurement, identities, isoNow, labelForMonth, markThreadRead, upsertThread } from "./utils/workflow";
+import { MeasurementDrawer } from "./components/MeasurementDrawer";
+import {
+  appendMessage,
+  availableMonths,
+  createAnomalyThread,
+  createReportThread,
+  createTextMessage,
+  findCaseForMeasurement,
+  identities,
+  isoNow,
+  labelForMonth,
+  markThreadRead,
+  upsertThread
+} from "./utils/workflow";
 
 const scenarioLabels = {
   latest: "Latest measurement",
@@ -207,13 +219,12 @@ function App() {
         setMetadata(apiMetadata);
         setHistoryRecords(records);
 
-        const scenario = workflow.selectedScenario === "custom" ? "latest" : workflow.selectedScenario;
-        const record = getScenarioRecord(records, scenario);
+        const record = getScenarioRecord(records, "latest");
         if (record) {
-          patchState({ selectedMeasurementId: record.measurement_id });
+          patchState({ selectedMeasurementId: record.measurement_id, selectedScenario: "latest" });
           const measurement = measurementFromHistory(record);
           setFormState(measurement);
-          await runAnalysis(measurement, scenario, record, contextFromRecord(record, scenario, "Historical workbook measurement submitted to live API"));
+          await runAnalysis(measurement, "latest", record, contextFromRecord(record, "latest", "Historical workbook measurement submitted to live API"));
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : "API startup failed";
@@ -226,12 +237,11 @@ function App() {
             const staticPayload = await getStaticHistory();
             if (cancelled) return;
             setHistoryRecords(staticPayload.records);
-            const scenario = workflow.selectedScenario === "custom" ? "latest" : workflow.selectedScenario;
-            const record = getScenarioRecord(staticPayload.records, scenario);
+            const record = getScenarioRecord(staticPayload.records, "latest");
             if (record) {
-              patchState({ selectedMeasurementId: record.measurement_id });
+              patchState({ selectedMeasurementId: record.measurement_id, selectedScenario: "latest" });
               setCurrentAnalysis(record);
-              setAnalysisContext(contextFromRecord(record, scenario, "Static workbook result — model not re-executed"));
+              setAnalysisContext(contextFromRecord(record, "latest", "Static workbook result — model not re-executed"));
             }
           } catch (staticError) {
             setDataSource("API unavailable");
@@ -487,13 +497,8 @@ function App() {
         <Sidebar
           role={workflow.role}
           mode={workflow.mode}
-          selectedPeriod={workflow.selectedPeriod}
-          selectedScenario={workflow.selectedScenario}
           activeModule={workflow.activeModule}
-          isAnalyzing={isAnalyzing}
           onModeChange={(mode) => patchState({ mode })}
-          onPeriodChange={(selectedPeriod) => patchState({ selectedPeriod })}
-          onScenarioChange={(selectedScenario) => void loadScenario(selectedScenario)}
           onModuleChange={(activeModule) => patchState({ activeModule })}
           onRoleChange={switchRole}
           onResetData={resetPrototypeData}
@@ -501,7 +506,7 @@ function App() {
         />
         <main className="main">
           <div className="empty-state">
-            <Loader2 aria-hidden="true" /> Loading SMARTCONTROL 2.0 dashboard data.
+            <Loader2 aria-hidden="true" /> Loading plant history
           </div>
         </main>
       </div>
@@ -513,13 +518,8 @@ function App() {
       <Sidebar
         role={workflow.role}
         mode={workflow.mode}
-        selectedPeriod={workflow.selectedPeriod}
-        selectedScenario={workflow.selectedScenario}
         activeModule={workflow.activeModule}
-        isAnalyzing={isAnalyzing}
         onModeChange={(mode) => patchState({ mode })}
-        onPeriodChange={(selectedPeriod) => patchState({ selectedPeriod })}
-        onScenarioChange={(selectedScenario) => void loadScenario(selectedScenario)}
         onModuleChange={(activeModule) => patchState({ activeModule })}
         onRoleChange={switchRole}
         onResetData={resetPrototypeData}
@@ -539,7 +539,7 @@ function App() {
           <div className="top-actions">
             <DataSourceIndicator dataSource={dataSource} isApiConnected={isApiConnected} isAnalyzeAvailable={isAnalyzeAvailable} />
             <button className="secondary-button" type="button" onClick={() => setDrawerOpen(true)}>
-              <SlidersHorizontal size={17} aria-hidden="true" /> Analyze
+              <SlidersHorizontal size={17} aria-hidden="true" /> Analyze measurement
             </button>
             <button className="icon-button" type="button" onClick={() => void loadScenario("latest")} aria-label="Reset to latest measurement">
               <RefreshCw size={17} aria-hidden="true" />
@@ -565,16 +565,21 @@ function App() {
             reportHref={reportHref}
             printReport={printReport}
             caseItem={selectedCase}
+            selectedPeriod={workflow.selectedPeriod}
+            onPeriodChange={(selectedPeriod) => patchState({ selectedPeriod })}
           />
         )}
 
         {workflow.activeModule === "anomaly-detection" && (
           <>
             <AnomalyDetectionView
+              mode={workflow.mode}
               records={periodHistory}
+              selectedPeriod={workflow.selectedPeriod}
+              onPeriodChange={(selectedPeriod) => patchState({ selectedPeriod })}
               selectedMeasurementId={workflow.selectedMeasurementId}
               currentAnalysis={currentAnalysis}
-              caseItem={selectedCase}
+              anomalyCases={workflow.anomalyCases}
               onSelectMeasurement={(measurementId) => void selectMeasurement(measurementId)}
               onSubmitForReview={submitForReview}
               onSendToMessages={sendAnalysisToMessages}
@@ -625,7 +630,7 @@ function App() {
         {workflow.activeModule === "review-queue" && (
           <ReviewQueueView
             cases={Object.values(workflow.anomalyCases)
-              .filter((item) => item.status !== "Closed")
+              .filter((item) => item.status === "Awaiting expert review")
               .map((item) => ({ caseItem: item, record: historyRecords.find((record) => record.measurement_id === item.measurementId) }))}
             onOpenCase={(measurementId) => {
               void selectMeasurement(measurementId);
@@ -655,8 +660,7 @@ function App() {
           onClose={closeDrawer}
           onSubmit={submitMeasurement}
           isAnalyzing={isAnalyzing}
-          loadScenario={loadScenario}
-          latestMeasurement={getScenarioRecord(historyRecords, "latest")}
+          loadScenario={(scenario) => loadScenario(scenario)}
         />
       )}
     </div>
@@ -676,119 +680,6 @@ function BuildInfoFooter() {
       </div>
       <a href="/legacy/" className="muted">Legacy static workflow prototype</a>
     </footer>
-  );
-}
-
-function MeasurementDrawer(props: {
-  initialMeasurement: PlantMeasurement;
-  metadata: ApiMetadata;
-  onClose: () => void;
-  onSubmit: (measurement: PlantMeasurement) => Promise<void>;
-  isAnalyzing: boolean;
-  loadScenario: (scenario: "latest" | "ai-anomaly" | "critical-rule" | "custom") => Promise<void>;
-  latestMeasurement?: HistoryRecord;
-}) {
-  const [measurement, setMeasurement] = useState<PlantMeasurement>(props.initialMeasurement);
-  const [errors, setErrors] = useState<string[]>([]);
-  const firstInputRef = useRef<HTMLInputElement | null>(null);
-
-  useEscapeKey(true, props.onClose);
-
-  useEffect(() => {
-    firstInputRef.current?.focus();
-  }, []);
-
-  function setField(key: keyof PlantMeasurement, value: string) {
-    setMeasurement((current) => ({ ...current, [key]: key === "maintenance_status" ? value : Number(value) }));
-  }
-
-  async function submit() {
-    const nextErrors = validateMeasurement(measurement, props.metadata.supported_maintenance_status_values);
-    setErrors(nextErrors);
-    if (nextErrors.length) {
-      return;
-    }
-
-    await props.onSubmit(measurement);
-  }
-
-  function resetToLatest() {
-    if (props.latestMeasurement) {
-      setMeasurement(measurementFromHistory(props.latestMeasurement));
-      setErrors([]);
-    }
-  }
-
-  const grouped = measurementFields.reduce<Record<string, typeof measurementFields>>((groups, field) => {
-    groups[field.group] = groups[field.group] ?? [];
-    groups[field.group].push(field);
-    return groups;
-  }, {});
-
-  return (
-    <div className="drawer-backdrop">
-      <section className="drawer" role="dialog" aria-modal="true" aria-labelledby="measurement-drawer-title">
-        <div className="drawer-header">
-          <div>
-            <h2 id="measurement-drawer-title">Analyze current measurement</h2>
-            <p className="muted">Submit the exact 19-field API contract to the SMARTCONTROL pipeline.</p>
-          </div>
-          <button className="icon-button" type="button" onClick={props.onClose} aria-label="Close analysis drawer">
-            <X size={18} aria-hidden="true" />
-          </button>
-        </div>
-
-        {errors.length > 0 && (
-          <div className="error-box" role="alert">
-            {errors.map((error) => <p key={error}>{error}</p>)}
-          </div>
-        )}
-
-        <div className="drawer-actions" style={{ marginBottom: 12 }}>
-          <button className="secondary-button" type="button" onClick={() => void props.loadScenario("latest")}>Latest-record initialization</button>
-          <button className="secondary-button" type="button" onClick={() => void props.loadScenario("ai-anomaly")}>AI anomaly example</button>
-          <button className="secondary-button" type="button" onClick={() => void props.loadScenario("critical-rule")}>Critical rule example</button>
-          <button className="secondary-button" type="button" onClick={resetToLatest}>Reset</button>
-        </div>
-
-        {Object.entries(grouped).map(([group, fields]) => (
-          <fieldset className="form-section" key={group}>
-            <legend><strong>{group}</strong></legend>
-            <div className="form-grid">
-              {fields.map((field, index) => (
-                <label className="field" key={field.key}>
-                  <span>{field.key}</span>
-                  {field.key === "maintenance_status" ? (
-                    <select value={String(measurement[field.key])} onChange={(event) => setField(field.key, event.target.value)}>
-                      {props.metadata.supported_maintenance_status_values.map((status) => (
-                        <option key={status} value={status}>{status}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      ref={index === 0 && group === "Feedstock" ? firstInputRef : undefined}
-                      type="number"
-                      step="any"
-                      value={String(measurement[field.key])}
-                      onChange={(event) => setField(field.key, event.target.value)}
-                    />
-                  )}
-                  <small>{field.label}{field.unit ? ` | ${field.unit}` : ""}</small>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-        ))}
-
-        <div className="drawer-actions">
-          <button className="primary-button" type="button" onClick={() => void submit()} disabled={props.isAnalyzing}>
-            {props.isAnalyzing ? <Loader2 size={17} aria-hidden="true" /> : <Activity size={17} aria-hidden="true" />}
-            Analyze measurement
-          </button>
-          <button className="secondary-button" type="button" onClick={props.onClose}>Cancel</button>
-        </div>
-      </section>
-    </div>
   );
 }
 

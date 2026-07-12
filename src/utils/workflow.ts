@@ -144,6 +144,38 @@ export function monthlyStats(records: HistoryRecord[], month: string) {
   const expertReview = scoped.filter((record) => record.expert_review_required === "Yes").length;
   const maintenanceOverdue = scoped.filter((record) => record.maintenance_status === "overdue").length;
   const avg = (key: keyof HistoryRecord) => (total ? scoped.reduce((sum, row) => sum + Number(row[key]), 0) / total : 0);
+  const countBy = (values: Array<string | null | undefined>) => Object.entries(values.reduce<Record<string, number>>((acc, value) => {
+    const key = value && value.trim() ? value : "None";
+    acc[key] = (acc[key] ?? 0) + 1;
+    return acc;
+  }, {})).map(([key, count]) => ({ key, count })).sort((a, b) => b.count - a.count);
+
+  const issueBreakdown = countBy(scoped.map((record) => record.possible_issue_category));
+  const triggerBreakdown = countBy(scoped.map((record) => record.trigger_source));
+  const importantRecords = scoped
+    .filter((record) => record.overall_rule_status !== "Normal" || record.anomaly_flag === "Anomaly" || record.expert_review_required === "Yes")
+    .sort((a, b) => {
+      const priority = (record: HistoryRecord) => {
+        if (record.overall_rule_status === "Critical") return 4;
+        if (record.overall_rule_status === "Warning") return 3;
+        if (record.anomaly_flag === "Anomaly") return 2;
+        if (record.expert_review_required === "Yes") return 1;
+        return 0;
+      };
+      const delta = priority(b) - priority(a);
+      if (delta !== 0) return delta;
+      return b.date.localeCompare(a.date);
+    })
+    .slice(0, 10);
+
+  const methaneTrend =
+    scoped.length > 1 ? scoped.at(-1)!.methane_percent - scoped[0].methane_percent : 0;
+  const keyTrend =
+    methaneTrend > 0.5
+      ? "Methane improved through the month"
+      : methaneTrend < -0.5
+        ? "Methane declined through the month"
+        : "Methane remained stable through the month";
 
   return {
     records: scoped,
@@ -156,7 +188,11 @@ export function monthlyStats(records: HistoryRecord[], month: string) {
     warningCount: warnings,
     criticalCount: critical,
     expertReviewCount: expertReview,
-    maintenanceOverdueCount: maintenanceOverdue
+    maintenanceOverdueCount: maintenanceOverdue,
+    issueBreakdown,
+    triggerBreakdown,
+    importantRecords,
+    keyTrend
   };
 }
 

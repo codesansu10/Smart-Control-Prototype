@@ -39,7 +39,7 @@ export function ReviewQueueView(props: {
           </tbody>
         </table>
       </div>
-      {!props.cases.length && <p className="muted">No cases currently await expert review.</p>}
+      {!props.cases.length && <p className="muted">No cases are awaiting expert review</p>}
     </section>
   );
 }

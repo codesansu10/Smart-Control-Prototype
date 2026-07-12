@@ -55,7 +55,8 @@ export function MessagesView(props: {
               </button>
             );
           })}
-          {!visibleThreads.length && <p className="muted">No conversations match the current filter.</p>}
+          {!props.threads.length && <p className="muted">No conversations yet</p>}
+          {!!props.threads.length && !visibleThreads.length && <p className="muted">No conversations match the current filter.</p>}
         </div>
       </section>
 
@@ -87,7 +88,7 @@ export function MessagesView(props: {
             </div>
           </>
         ) : (
-          <p className="muted">Select a conversation to view messages.</p>
+          <p className="muted">{props.threads.length ? "Select a conversation to view messages." : "No conversations yet"}</p>
         )}
       </section>
     </div>

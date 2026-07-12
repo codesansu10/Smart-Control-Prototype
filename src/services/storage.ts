@@ -32,7 +32,7 @@ const defaultState: PersistedDashboardState = {
   role: "operator",
   mode: "Basic",
   activeModule: "dashboard",
-  selectedPeriod: "30",
+  selectedPeriod: "7",
   selectedChartMetric: "methane_percent",
   lastCustomMeasurement: null,
   selectedScenario: "latest",

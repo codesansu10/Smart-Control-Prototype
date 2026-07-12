@@ -1,6 +1,6 @@
-import { Check, ChevronUp, ClipboardList, Gauge, History, MessageSquare, Settings2, TriangleAlert, UserCog, XCircle } from "lucide-react";
+import { Check, ChevronUp, ClipboardList, Gauge, MessageSquare, TriangleAlert, UserCog, XCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import type { DashboardMode, PeriodKey, ScenarioKey, UserRole, WorkflowModule } from "../types/smartcontrol";
+import type { DashboardMode, UserRole, WorkflowModule } from "../types/smartcontrol";
 import { identities } from "../utils/workflow";
 
 const operatorNav: Array<{ key: WorkflowModule; label: string }> = [
@@ -17,29 +17,11 @@ const expertNav: Array<{ key: WorkflowModule; label: string }> = [
   { key: "messages", label: "Messages" }
 ];
 
-const scenarioLabels: Record<ScenarioKey, string> = {
-  latest: "Latest measurement",
-  "ai-anomaly": "AI anomaly example",
-  "critical-rule": "Critical rule example",
-  custom: "Custom measurement"
-};
-
-const periodLabels: Record<PeriodKey, string> = {
-  "7": "7 available days",
-  "30": "30 available days",
-  all: "All data"
-};
-
 export function Sidebar(props: {
   role: UserRole;
   mode: DashboardMode;
-  selectedPeriod: PeriodKey;
-  selectedScenario: ScenarioKey;
   activeModule: WorkflowModule;
-  isAnalyzing: boolean;
   onModeChange: (mode: DashboardMode) => void;
-  onPeriodChange: (period: PeriodKey) => void;
-  onScenarioChange: (scenario: ScenarioKey) => void;
   onModuleChange: (module: WorkflowModule) => void;
   onRoleChange: (role: UserRole) => void;
   onResetData: () => void;
@@ -64,41 +46,6 @@ export function Sidebar(props: {
           ))}
         </div>
       </nav>
-
-      <div className="sidebar-section">
-        <span className="sidebar-label">Detail level</span>
-        <div className="segmented" role="group" aria-label="Dashboard mode">
-          {(["Basic", "Advanced"] as const).map((item) => (
-            <button key={item} type="button" className={props.mode === item ? "active" : ""} onClick={() => props.onModeChange(item)}>
-              {item === "Basic" ? <Gauge size={16} aria-hidden="true" /> : <Settings2 size={16} aria-hidden="true" />}
-              {item}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="sidebar-section">
-        <span className="sidebar-label">Period</span>
-        <div className="period-controls" role="group" aria-label="History period">
-          {(["7", "30", "all"] as const).map((item) => (
-            <button key={item} type="button" className={props.selectedPeriod === item ? "active" : ""} onClick={() => props.onPeriodChange(item)}>
-              <History size={16} aria-hidden="true" />
-              {periodLabels[item]}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="sidebar-section">
-        <span className="sidebar-label">Scenario</span>
-        <div className="scenario-controls">
-          {(["latest", "ai-anomaly", "critical-rule", "custom"] as const).map((scenario) => (
-            <button key={scenario} type="button" className={props.selectedScenario === scenario ? "active" : ""} onClick={() => props.onScenarioChange(scenario)} disabled={props.isAnalyzing}>
-              {scenarioLabels[scenario]}
-            </button>
-          ))}
-        </div>
-      </div>
 
       <div style={{ marginTop: "auto" }}>
         <UserSwitcher
