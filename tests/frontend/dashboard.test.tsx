@@ -1,13 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
 import historyPayload from "../../public/data/dashboard-history.json";
+import legacyHtml from "../../public/legacy/index.html?raw";
+import appSource from "../../src/App.tsx?raw";
 import type { AnalysisResult, HistoryRecord, PlantMeasurement } from "../../src/types/smartcontrol";
 import { apiUrl, getStaticHistory } from "../../src/services/api";
-import { loadPersistedState, savePersistedState, STORAGE_KEY } from "../../src/services/storage";
+import { getDefaultPersistedState, loadPersistedState, resetWorkflowState, savePersistedState, STORAGE_KEY } from "../../src/services/storage";
 import { deterministicRuleStatuses, isAiOnlyAnomaly } from "../../src/utils/anomaly";
 import { aggregateDaily, getScenarioRecord, ruleBreakdown, selectPeriod } from "../../src/utils/history";
 import { measurementFromHistory, validateMeasurement } from "../../src/utils/measurements";
 import { generateHtmlReport } from "../../src/utils/report";
 import { getUnifiedStatus } from "../../src/utils/status";
+import { Sidebar } from "../../src/components/Sidebar";
+import { appendMessage, availableMonths, createAnomalyThread, createReportThread, createTextMessage, markThreadRead, monthlyStats } from "../../src/utils/workflow";
 
 const records = historyPayload.records as HistoryRecord[];
 const latest = records.find((record) => record.measurement_id === "M0600")!;
@@ -50,9 +55,16 @@ describe("dashboard status and history logic", () => {
 
   it("keeps M0123 as an unmistakable AI-only anomaly", () => {
     expect(anomaly.overall_rule_status).toBe("Normal");
+    expect(anomaly.ph_alert).toBe("Normal");
+    expect(anomaly.temperature_alert).toBe("Normal");
+    expect(anomaly.oxygen_alert).toBe("Normal");
+    expect(anomaly.methane_alert).toBe("Normal");
+    expect(anomaly.h2s_alert).toBe("Normal");
+    expect(anomaly.maintenance_alert).toBe("Normal");
     expect(anomaly.anomaly_flag).toBe("Anomaly");
     expect(anomaly.trigger_source).toBe("Isolation Forest");
-    expect(anomaly.anomaly_score).toBeGreaterThan(0);
+    expect(anomaly.expert_review_required).toBe("Yes");
+    expect(getUnifiedStatus(anomaly)).toBe("Warning");
     expect(deterministicRuleStatuses(anomaly).every((status) => status === "Normal")).toBe(true);
     expect(isAiOnlyAnomaly(anomaly)).toBe(true);
     expect(ruleBreakdown(anomaly)).toEqual([
@@ -60,6 +72,83 @@ describe("dashboard status and history logic", () => {
       { status: "Warning", count: 0 },
       { status: "Critical", count: 0 }
     ]);
+  });
+});
+
+describe("role navigation and detail mode", () => {
+  it("shows role-specific navigation", () => {
+    const noop = vi.fn();
+    const { rerender } = render(
+      <Sidebar
+        role="operator"
+        mode="Basic"
+        selectedPeriod="30"
+        selectedScenario="latest"
+        activeModule="dashboard"
+        isAnalyzing={false}
+        onModeChange={noop}
+        onPeriodChange={noop}
+        onScenarioChange={noop}
+        onModuleChange={noop}
+        onRoleChange={noop}
+        onResetData={noop}
+        onSignOut={noop}
+      />
+    );
+
+    expect(screen.getByText("Dashboard")).not.toBeNull();
+    expect(screen.queryByText("Review Queue")).toBeNull();
+
+    rerender(
+      <Sidebar
+        role="expert"
+        mode="Advanced"
+        selectedPeriod="30"
+        selectedScenario="latest"
+        activeModule="review-queue"
+        isAnalyzing={false}
+        onModeChange={noop}
+        onPeriodChange={noop}
+        onScenarioChange={noop}
+        onModuleChange={noop}
+        onRoleChange={noop}
+        onResetData={noop}
+        onSignOut={noop}
+      />
+    );
+
+    expect(screen.getByText("Review Queue")).not.toBeNull();
+    expect(screen.queryByText("Dashboard")).toBeNull();
+  });
+});
+
+describe("message and workflow utilities", () => {
+  it("creates anomaly submission thread and updates status thread", () => {
+    const thread = createAnomalyThread({ measurementId: "M0123", caseStatus: "Awaiting expert review", note: "Please validate" });
+    expect(thread.type).toBe("anomaly");
+    expect(thread.measurementId).toBe("M0123");
+    expect(thread.caseStatus).toBe("Awaiting expert review");
+
+    const status = createTextMessage({ sender: "system", body: "Case closed", kind: "status" });
+    const updated = appendMessage(thread, status, "expert");
+    expect(updated.messages.at(-1)?.kind).toBe("status");
+    expect(updated.unreadByOperator).toBeGreaterThan(0);
+
+    const read = markThreadRead(updated, "operator");
+    expect(read.unreadByOperator).toBe(0);
+  });
+
+  it("creates report thread and month statistics", () => {
+    const months = availableMonths(records);
+    expect(months).toEqual(["2026-01", "2026-02", "2026-03", "2026-04"]);
+
+    const reportThread = createReportThread({ month: months.at(-1)!, reportStatus: "Awaiting expert review", note: "Please review" });
+    expect(reportThread.type).toBe("monthly-report");
+    expect(reportThread.reportingMonth).toBe("2026-04");
+
+    const stats = monthlyStats(records, "2026-04");
+    expect(stats.total).toBeGreaterThan(0);
+    expect(stats.averageMethane).toBeGreaterThan(0);
   });
 });
 
@@ -120,7 +209,7 @@ describe("report generation", () => {
     maintenanceOverdueCount: 1
   };
 
-  it("includes the complete API appendix and does not render scores as percentages", () => {
+  it("includes workflow decisions and does not render anomaly scores as percentages", () => {
     const html = generateHtmlReport({
       analysis: anomaly as AnalysisResult,
       history: records.slice(0, 10),
@@ -137,38 +226,42 @@ describe("report generation", () => {
         submittedAt: "2026-07-12T00:00:00.000Z"
       },
       generatedAt: "2026-07-12T00:00:00.000Z",
-      limitations: ["A detected anomaly is not a confirmed diagnosis."]
+      limitations: ["A detected anomaly is not a confirmed diagnosis."],
+      workflow: {
+        caseStatus: "Closed",
+        expertDecision: "False alarm",
+        expertReply: "No anomaly confirmed",
+        operatorMeasures: "Continue monitoring"
+      }
     });
 
-    expect(html).toContain("Complete API Response Appendix");
-    expect(html).toContain("Current Data Context");
-    expect(html).toContain("AI-only anomaly");
-    expect(html).toContain("No individual deterministic rule threshold was crossed");
-    expect(html).toContain("Rule-Based Status");
-    expect(html).toContain("AI Anomaly");
-    expect(html).toContain("Isolation Forest");
+    expect(html).toContain("Workflow decision");
+    expect(html).toContain("case_status");
+    expect(html).toContain("expert_decision");
     expect(html).toContain("Signed Isolation Forest decision score");
-    expect(html).toContain("threshold");
     expect(html).not.toContain("47.6%");
     expect(html).not.toContain("940 ppm");
     expect(html).not.toContain("3 elevated values");
-    expect(html).not.toContain("82%");
-    expect(html).not.toContain("confidence");
+    expect(html).not.toContain("anomaly_score_percent");
   });
 });
 
-describe("versioned persistence", () => {
+describe("versioned workflow persistence", () => {
   beforeEach(() => {
     window.localStorage.clear();
   });
 
-  it("persists only the expected dashboard preferences", () => {
+  it("persists expected workflow preferences and resets state", () => {
     savePersistedState({
+      ...getDefaultPersistedState(),
+      role: "expert",
       mode: "Advanced",
+      activeModule: "messages",
       selectedPeriod: "7",
       selectedChartMetric: "anomaly_score",
       selectedScenario: "ai-anomaly",
-      lastCustomMeasurement: measurement(latest)
+      lastCustomMeasurement: measurement(latest),
+      selectedMeasurementId: "M0123"
     });
 
     const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -178,9 +271,21 @@ describe("versioned persistence", () => {
     expect(parsed.apiError).toBeUndefined();
 
     const state = loadPersistedState();
+    expect(state.role).toBe("expert");
     expect(state.mode).toBe("Advanced");
-    expect(state.selectedPeriod).toBe("7");
-    expect(state.selectedChartMetric).toBe("anomaly_score");
-    expect(state.selectedScenario).toBe("ai-anomaly");
+    expect(state.activeModule).toBe("messages");
+
+    const reset = resetWorkflowState();
+    expect(reset.role).toBe("operator");
+    expect(loadPersistedState().activeModule).toBe("dashboard");
+  });
+});
+
+describe("legacy archival paths", () => {
+  it("keeps root app model-backed and legacy archive available", () => {
+    expect(appSource).not.toContain("47.6%");
+    expect(appSource).not.toContain("940 ppm");
+    expect(legacyHtml).toContain("Archived static workflow prototype");
+    expect(legacyHtml).toContain("Open current model-backed dashboard");
   });
 });

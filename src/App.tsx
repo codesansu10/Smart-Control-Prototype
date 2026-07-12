@@ -1,99 +1,37 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  Activity,
-  AlertTriangle,
-  BrainCircuit,
-  CheckCircle2,
-  ClipboardList,
-  Database,
-  Download,
-  FileText,
-  Gauge,
-  History,
-  Loader2,
-  Printer,
-  RefreshCw,
-  Settings2,
-  SlidersHorizontal,
-  X
-} from "lucide-react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  PolarAngleAxis,
-  PolarGrid,
-  Radar,
-  RadarChart,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis
-} from "recharts";
+import { Activity, Loader2, RefreshCw, SlidersHorizontal, X } from "lucide-react";
 import type {
-  AnalysisResult,
   AnalysisContext,
+  AnalysisResult,
   ApiMetadata,
-  ChartMetric,
-  DashboardMode,
-  DataSourceState,
   HistoryRecord,
-  PeriodKey,
+  MessageThread,
+  MonthlyReport,
   PlantMeasurement,
-  ScenarioKey,
-  Severity
+  WorkflowCase
 } from "./types/smartcontrol";
-import {
-  analyzeMeasurement,
-  getHealth,
-  getHistory,
-  getMetadata,
-  getStaticHistory
-} from "./services/api";
-import {
-  loadPersistedState,
-  savePersistedState
-} from "./services/storage";
+import { analyzeMeasurement, getHealth, getHistory, getMetadata, getStaticHistory } from "./services/api";
+import { getDefaultPersistedState } from "./services/storage";
 import { useEscapeKey } from "./hooks/useEscapeKey";
+import { useWorkflowState } from "./hooks/useWorkflowState";
 import { fallbackMetadata } from "./utils/defaults";
-import { compactNumber, numberFormat, percent } from "./utils/format";
-import {
-  aggregateDaily,
-  calculatePeriodKpis,
-  chartMetrics,
-  getScenarioRecord,
-  ruleBreakdown,
-  selectPeriod
-} from "./utils/history";
-import {
-  measurementFields,
-  measurementFromHistory,
-  validateMeasurement
-} from "./utils/measurements";
-import { isAiOnlyAnomaly } from "./utils/anomaly";
+import { aggregateDaily, calculatePeriodKpis, getScenarioRecord, selectPeriod } from "./utils/history";
+import { measurementFields, measurementFromHistory, validateMeasurement } from "./utils/measurements";
 import { generateHtmlReport } from "./utils/report";
-import {
-  displayTriggerSource,
-  getUnifiedStatus,
-  severityClass
-} from "./utils/status";
+import { Sidebar } from "./components/Sidebar";
+import { DashboardView, DataSourceIndicator } from "./components/DashboardView";
+import { AnomalyDetectionView } from "./components/AnomalyDetectionView";
+import { MonthlyReportView } from "./components/MonthlyReportView";
+import { MessagesView } from "./components/MessagesView";
+import { ReviewQueueView } from "./components/ReviewQueueView";
+import { appendMessage, availableMonths, createAnomalyThread, createReportThread, createTextMessage, findCaseForMeasurement, identities, isoNow, labelForMonth, markThreadRead, upsertThread } from "./utils/workflow";
 
-const scenarioLabels: Record<ScenarioKey, string> = {
+const scenarioLabels = {
   latest: "Latest measurement",
   "ai-anomaly": "AI anomaly example",
   "critical-rule": "Critical rule example",
   custom: "Custom measurement"
-};
-
-const periodLabels: Record<PeriodKey, string> = {
-  "7": "7 available days",
-  "30": "30 available days",
-  all: "All data"
-};
+} as const;
 
 const buildInfo = {
   appVersion: __APP_VERSION__,
@@ -103,16 +41,7 @@ const buildInfo = {
   buildDate: __BUILD_DATE__
 };
 
-const ruleRows = [
-  { key: "ph", alert: "ph_alert", label: "pH", value: "ph_value", unit: "pH" },
-  { key: "temperature", alert: "temperature_alert", label: "Temperature", value: "temperature_c", unit: "deg C" },
-  { key: "oxygen", alert: "oxygen_alert", label: "Oxygen", value: "oxygen_percent", unit: "%" },
-  { key: "methane", alert: "methane_alert", label: "Methane", value: "methane_percent", unit: "%" },
-  { key: "h2s", alert: "h2s_alert", label: "H2S", value: "h2s_ppm", unit: "ppm" },
-  { key: "maintenance", alert: "maintenance_alert", label: "Maintenance", value: "maintenance_status", unit: "" }
-] as const;
-
-function contextFromRecord(record: HistoryRecord, scenario: ScenarioKey, sourceLabel: string): AnalysisContext {
+function contextFromRecord(record: HistoryRecord, scenario: keyof typeof scenarioLabels, sourceLabel: string): AnalysisContext {
   return {
     measurementId: record.measurement_id,
     measurementDate: record.date,
@@ -134,97 +63,73 @@ function contextFromCustom(sourceLabel: string): AnalysisContext {
   };
 }
 
-function formatTimestamp(value: string): string {
-  const timestamp = Date.parse(value);
-  if (Number.isNaN(timestamp)) {
-    return value;
-  }
-
-  return new Date(timestamp).toLocaleString();
-}
-
-function shortCommit(value: string): string {
-  return value === "local" ? value : value.slice(0, 12);
-}
-
 function App() {
-  const persisted = useMemo(() => loadPersistedState(), []);
-  const [mode, setMode] = useState<DashboardMode>(persisted.mode);
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodKey>(persisted.selectedPeriod);
-  const [selectedChartMetric, setSelectedChartMetric] = useState<ChartMetric>(persisted.selectedChartMetric);
-  const [selectedScenario, setSelectedScenario] = useState<ScenarioKey>(persisted.selectedScenario);
-  const [lastCustomMeasurement, setLastCustomMeasurement] = useState<PlantMeasurement | null>(persisted.lastCustomMeasurement);
+  const { state: workflow, patchState, switchRole, resetState } = useWorkflowState();
   const [metadata, setMetadata] = useState<ApiMetadata>(fallbackMetadata);
   const [historyRecords, setHistoryRecords] = useState<HistoryRecord[]>([]);
   const [currentAnalysis, setCurrentAnalysis] = useState<AnalysisResult | null>(null);
   const [analysisContext, setAnalysisContext] = useState<AnalysisContext | null>(null);
-  const [dataSource, setDataSource] = useState<DataSourceState>("API unavailable");
+  const [dataSource, setDataSource] = useState<"Live API connected" | "Static historical fallback" | "API unavailable" | "Current analysis">("API unavailable");
   const [isApiConnected, setIsApiConnected] = useState(false);
   const [isAnalyzeAvailable, setIsAnalyzeAvailable] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [formState, setFormState] = useState<PlantMeasurement | null>(lastCustomMeasurement);
+  const [formState, setFormState] = useState<PlantMeasurement | null>(workflow.lastCustomMeasurement);
   const [announcement, setAnnouncement] = useState("");
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(workflow.messageThreads[0]?.id ?? null);
+  const [expertReply, setExpertReply] = useState("");
+  const [operatorMeasures, setOperatorMeasures] = useState("");
   const restoreFocusRef = useRef<HTMLElement | null>(null);
 
-  const periodHistory = useMemo(
-    () => selectPeriod(historyRecords, selectedPeriod),
-    [historyRecords, selectedPeriod]
-  );
-
+  const periodHistory = useMemo(() => selectPeriod(historyRecords, workflow.selectedPeriod), [historyRecords, workflow.selectedPeriod]);
   const dailyData = useMemo(() => aggregateDaily(periodHistory), [periodHistory]);
   const kpis = useMemo(() => calculatePeriodKpis(periodHistory), [periodHistory]);
-  const selectedMetricInfo = chartMetrics.find((metric) => metric.key === selectedChartMetric) ?? chartMetrics[0];
-  const unifiedStatus = currentAnalysis ? getUnifiedStatus(currentAnalysis) : "Normal";
+  const months = useMemo(() => availableMonths(historyRecords), [historyRecords]);
+  const selectedMonth = workflow.selectedReportMonth ?? months.at(-1) ?? "";
+  const selectedCase = workflow.selectedMeasurementId ? findCaseForMeasurement(workflow.anomalyCases, workflow.selectedMeasurementId) : null;
+  const selectedReport = selectedMonth ? workflow.monthlyReports[selectedMonth] ?? null : null;
+
+  useEffect(() => {
+    if (months.length && !workflow.selectedReportMonth) {
+      patchState({ selectedReportMonth: months.at(-1) ?? null });
+    }
+  }, [months, patchState, workflow.selectedReportMonth]);
+
   const reportHtml = useMemo(() => {
     if (!currentAnalysis) {
       return "";
     }
 
+    const currentCase = workflow.selectedMeasurementId ? workflow.anomalyCases[workflow.selectedMeasurementId] : null;
+
     return generateHtmlReport({
       analysis: currentAnalysis,
       history: periodHistory,
       kpis,
-      scenario: selectedScenario,
-      periodLabel: periodLabels[selectedPeriod],
+      scenario: workflow.selectedScenario,
+      periodLabel: workflow.selectedPeriod,
       dataSource,
       context: analysisContext,
       generatedAt: new Date().toISOString(),
-      limitations: metadata.model_limitations
+      limitations: metadata.model_limitations,
+      workflow: {
+        caseStatus: currentCase?.status ?? "Open",
+        expertDecision: currentCase?.expertDecision ?? "Pending",
+        expertReply: currentCase?.expertReply ?? "",
+        operatorMeasures: currentCase?.operatorMeasures ?? ""
+      }
     });
-  }, [analysisContext, currentAnalysis, dataSource, kpis, metadata.model_limitations, periodHistory, selectedPeriod, selectedScenario]);
+  }, [analysisContext, currentAnalysis, dataSource, kpis, metadata.model_limitations, periodHistory, workflow.anomalyCases, workflow.selectedMeasurementId, workflow.selectedPeriod, workflow.selectedScenario]);
   const reportHref = reportHtml ? `data:text/html;charset=utf-8,${encodeURIComponent(reportHtml)}` : "#";
 
-  const applyStaticScenario = useCallback((records: HistoryRecord[], scenario: ScenarioKey) => {
-    if (scenario === "custom") {
-      return;
-    }
-
-    const record = getScenarioRecord(records, scenario);
-    if (!record) {
-      return;
-    }
-
-    setCurrentAnalysis(record);
-    setFormState(measurementFromHistory(record));
-    setAnalysisContext(contextFromRecord(record, scenario, "Static workbook result - model was not re-executed"));
-    setDataSource("Static historical fallback");
-    setAnnouncement(`${scenarioLabels[scenario]} loaded from historical workbook data.`);
-  }, []);
-
-  const runAnalysis = useCallback(async (
-    measurement: PlantMeasurement,
-    scenario: ScenarioKey,
-    fallbackRecord?: HistoryRecord,
-    context?: AnalysisContext
-  ) => {
+  const runAnalysis = useCallback(async (measurement: PlantMeasurement, scenario: keyof typeof scenarioLabels, fallbackRecord?: HistoryRecord, context?: AnalysisContext) => {
     if (!isAnalyzeAvailable) {
       if (fallbackRecord) {
         setCurrentAnalysis(fallbackRecord);
         setDataSource("Static historical fallback");
-        setAnalysisContext(contextFromRecord(fallbackRecord, scenario, "Static workbook result - model was not re-executed"));
+        setAnalysisContext(contextFromRecord(fallbackRecord, scenario, "Static workbook result — model not re-executed"));
       } else if (context) {
         setAnalysisContext(context);
       }
@@ -246,7 +151,7 @@ function App() {
       if (fallbackRecord) {
         setCurrentAnalysis(fallbackRecord);
         setDataSource("Static historical fallback");
-        setAnalysisContext(contextFromRecord(fallbackRecord, scenario, "Static workbook result - model was not re-executed"));
+        setAnalysisContext(contextFromRecord(fallbackRecord, scenario, "Static workbook result — model not re-executed"));
       } else {
         setDataSource("API unavailable");
         setAnalysisContext(context ?? contextFromCustom("Custom measurement submitted to unavailable API"));
@@ -256,12 +161,12 @@ function App() {
     }
   }, [isAnalyzeAvailable]);
 
-  const loadScenario = useCallback(async (scenario: ScenarioKey, records = historyRecords) => {
-    setSelectedScenario(scenario);
+  const loadScenario = useCallback(async (scenario: keyof typeof scenarioLabels, records = historyRecords) => {
+    patchState({ selectedScenario: scenario });
 
     if (scenario === "custom") {
-      if (lastCustomMeasurement) {
-        setFormState(lastCustomMeasurement);
+      if (workflow.lastCustomMeasurement) {
+        setFormState(workflow.lastCustomMeasurement);
       }
       restoreFocusRef.current = document.activeElement as HTMLElement | null;
       setDrawerOpen(true);
@@ -274,10 +179,11 @@ function App() {
       return;
     }
 
+    patchState({ selectedMeasurementId: record.measurement_id });
     const measurement = measurementFromHistory(record);
     setFormState(measurement);
     await runAnalysis(measurement, scenario, record, contextFromRecord(record, scenario, "Historical workbook measurement submitted to live API"));
-  }, [historyRecords, lastCustomMeasurement, runAnalysis]);
+  }, [historyRecords, patchState, runAnalysis, workflow.lastCustomMeasurement]);
 
   useEffect(() => {
     let cancelled = false;
@@ -288,48 +194,26 @@ function App() {
 
       try {
         await getHealth();
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
         setIsApiConnected(true);
         setIsAnalyzeAvailable(true);
         setDataSource("Live API connected");
 
         const apiMetadata = await getMetadata();
-        const recentHistory = await getHistory(30);
         const fullHistory = await getHistory("all");
+        if (cancelled) return;
 
-        if (cancelled) {
-          return;
-        }
-
-        const records = fullHistory.records.length ? fullHistory.records : recentHistory.records;
+        const records = fullHistory.records;
         setMetadata(apiMetadata);
         setHistoryRecords(records);
 
-        const scenario = selectedScenario === "custom" ? "latest" : selectedScenario;
+        const scenario = workflow.selectedScenario === "custom" ? "latest" : workflow.selectedScenario;
         const record = getScenarioRecord(records, scenario);
         if (record) {
+          patchState({ selectedMeasurementId: record.measurement_id });
           const measurement = measurementFromHistory(record);
           setFormState(measurement);
-          const nextContext = contextFromRecord(record, scenario, "Historical workbook measurement submitted to live API");
-          try {
-            const result = await analyzeMeasurement(measurement);
-            if (!cancelled) {
-              setCurrentAnalysis(result);
-              setDataSource("Current analysis");
-              setAnalysisContext(nextContext);
-              setAnnouncement(`${scenarioLabels[scenario]} analyzed through the live API.`);
-            }
-          } catch (analysisError) {
-            if (!cancelled) {
-              setApiError(analysisError instanceof Error ? analysisError.message : "Initial analysis failed");
-              setIsAnalyzeAvailable(false);
-              setCurrentAnalysis(record);
-              setDataSource("Static historical fallback");
-              setAnalysisContext(contextFromRecord(record, scenario, "Static workbook result - model was not re-executed"));
-            }
-          }
+          await runAnalysis(measurement, scenario, record, contextFromRecord(record, scenario, "Historical workbook measurement submitted to live API"));
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : "API startup failed";
@@ -340,11 +224,15 @@ function App() {
           setDataSource("Static historical fallback");
           try {
             const staticPayload = await getStaticHistory();
-            if (cancelled) {
-              return;
-            }
+            if (cancelled) return;
             setHistoryRecords(staticPayload.records);
-            applyStaticScenario(staticPayload.records, selectedScenario === "custom" ? "latest" : selectedScenario);
+            const scenario = workflow.selectedScenario === "custom" ? "latest" : workflow.selectedScenario;
+            const record = getScenarioRecord(staticPayload.records, scenario);
+            if (record) {
+              patchState({ selectedMeasurementId: record.measurement_id });
+              setCurrentAnalysis(record);
+              setAnalysisContext(contextFromRecord(record, scenario, "Static workbook result — model not re-executed"));
+            }
           } catch (staticError) {
             setDataSource("API unavailable");
             setApiError(staticError instanceof Error ? staticError.message : "Static fallback failed");
@@ -358,21 +246,10 @@ function App() {
     }
 
     void boot();
-
     return () => {
       cancelled = true;
     };
   }, []);
-
-  useEffect(() => {
-    savePersistedState({
-      mode,
-      selectedPeriod,
-      selectedChartMetric,
-      lastCustomMeasurement,
-      selectedScenario
-    });
-  }, [lastCustomMeasurement, mode, selectedChartMetric, selectedPeriod, selectedScenario]);
 
   function closeDrawer() {
     setDrawerOpen(false);
@@ -387,32 +264,13 @@ function App() {
     }
 
     setFormState(measurement);
-    setLastCustomMeasurement(measurement);
-    setSelectedScenario("custom");
+    patchState({ lastCustomMeasurement: measurement, selectedScenario: "custom" });
     await runAnalysis(measurement, "custom", undefined, contextFromCustom("Custom measurement submitted to live API"));
     closeDrawer();
   }
 
-  function openDrawer() {
-    restoreFocusRef.current = document.activeElement as HTMLElement | null;
-    if (!formState && historyRecords.length) {
-      const latest = getScenarioRecord(historyRecords, "latest");
-      if (latest) {
-        setFormState(measurementFromHistory(latest));
-      }
-    }
-    setDrawerOpen(true);
-  }
-
-  function resetToLatest() {
-    void loadScenario("latest");
-  }
-
   function printReport() {
-    if (!currentAnalysis) {
-      return;
-    }
-
+    if (!currentAnalysis) return;
     const html = reportHtml;
     const printWindow = window.open("", "_blank", "noopener,noreferrer");
     printWindow?.document.write(html);
@@ -420,17 +278,226 @@ function App() {
     printWindow?.print();
   }
 
+  async function selectMeasurement(measurementId: string) {
+    const record = historyRecords.find((item) => item.measurement_id === measurementId);
+    if (!record) return;
+    patchState({ selectedMeasurementId: measurementId });
+    const measurement = measurementFromHistory(record);
+    await runAnalysis(measurement, workflow.selectedScenario === "custom" ? "latest" : workflow.selectedScenario, record, contextFromRecord(record, "latest", "Historical workbook measurement submitted to live API"));
+  }
+
+  function updateThreads(thread: MessageThread) {
+    const next = upsertThread(workflow.messageThreads, thread);
+    patchState({ messageThreads: next });
+  }
+
+  function submitForReview(note: string) {
+    if (!workflow.selectedMeasurementId) {
+      return;
+    }
+    const measurementId = workflow.selectedMeasurementId;
+    let thread = workflow.messageThreads.find((item) => item.measurementId === measurementId && item.type === "anomaly");
+    if (!thread) {
+      thread = createAnomalyThread({ measurementId, caseStatus: "Awaiting expert review", note });
+    } else {
+      const entry = createTextMessage({ sender: "julia", body: note || "Please review this anomaly case.", kind: "analysis-card" });
+      thread = appendMessage(thread, entry, "operator");
+      thread = { ...thread, caseStatus: "Awaiting expert review" };
+    }
+
+    updateThreads(thread);
+    patchState({
+      activeModule: "messages",
+      anomalyCases: {
+        ...workflow.anomalyCases,
+        [measurementId]: {
+          measurementId,
+          note,
+          status: "Awaiting expert review",
+          expertDecision: null,
+          expertReply: "",
+          operatorMeasures: "",
+          conversationId: thread.id,
+          updatedAt: isoNow()
+        }
+      }
+    });
+    setActiveThreadId(thread.id);
+    setAnnouncement(`Anomaly ${measurementId} submitted for expert review.`);
+  }
+
+  function sendAnalysisToMessages() {
+    if (!workflow.selectedMeasurementId || !currentAnalysis) {
+      return;
+    }
+    const measurementId = workflow.selectedMeasurementId;
+    let thread = workflow.messageThreads.find((item) => item.measurementId === measurementId && item.type === "anomaly");
+    if (!thread) {
+      thread = createAnomalyThread({ measurementId, caseStatus: selectedCase?.status ?? "Open", note: "Analysis shared with expert." });
+    }
+    const card = createTextMessage({
+      sender: "julia",
+      kind: "analysis-card",
+      body: `Analysis card ${measurementId}: model=${currentAnalysis.anomaly_flag}, rule=${currentAnalysis.overall_rule_status}, trigger=${currentAnalysis.trigger_source ?? "None"}.`
+    });
+    thread = appendMessage(thread, card, "operator");
+    updateThreads(thread);
+    setActiveThreadId(thread.id);
+    patchState({ activeModule: "messages" });
+  }
+
+  function sendMessage(threadId: string, body: string) {
+    const value = body.trim();
+    if (!value) return;
+    const sender = workflow.role === "expert" ? "bernd" : "julia";
+    const found = workflow.messageThreads.find((thread) => thread.id === threadId);
+    if (!found) return;
+    const updated = appendMessage(found, createTextMessage({ sender, body: value }), workflow.role);
+    updateThreads(updated);
+  }
+
+  function createGeneralThread(subject: string) {
+    const initial = createTextMessage({ sender: workflow.role === "expert" ? "bernd" : "julia", body: "New conversation started." });
+    const thread: MessageThread = {
+      id: `thread-${Math.random().toString(36).slice(2, 10)}`,
+      subject: subject.trim(),
+      type: "general",
+      messages: [initial],
+      unreadByOperator: workflow.role === "expert" ? 1 : 0,
+      unreadByExpert: workflow.role === "operator" ? 1 : 0,
+      lastActivityAt: initial.timestamp
+    };
+    updateThreads(thread);
+    setActiveThreadId(thread.id);
+  }
+
+  function selectThread(id: string) {
+    setActiveThreadId(id);
+    const found = workflow.messageThreads.find((thread) => thread.id === id);
+    if (!found) return;
+    updateThreads(markThreadRead(found, workflow.role));
+  }
+
+  function updateCaseFromExpert(status: WorkflowCase["status"], decision: WorkflowCase["expertDecision"]) {
+    if (!workflow.selectedMeasurementId) return;
+    const measurementId = workflow.selectedMeasurementId;
+    const caseItem = workflow.anomalyCases[measurementId] ?? {
+      measurementId,
+      note: "",
+      status: "Open",
+      expertDecision: null,
+      expertReply: "",
+      operatorMeasures: "",
+      conversationId: null,
+      updatedAt: isoNow()
+    };
+
+    const nextCase: WorkflowCase = {
+      ...caseItem,
+      status,
+      expertDecision: decision,
+      expertReply,
+      operatorMeasures,
+      updatedAt: isoNow()
+    };
+
+    let thread = caseItem.conversationId ? workflow.messageThreads.find((item) => item.id === caseItem.conversationId) : undefined;
+    if (!thread) {
+      thread = createAnomalyThread({ measurementId, caseStatus: status, note: caseItem.note || "Review started by expert." });
+    }
+    const statusMessage = createTextMessage({ sender: "system", kind: "status", body: `Case ${measurementId}: ${status}. Expert decision: ${decision ?? "Pending"}.` });
+    thread = appendMessage(thread, statusMessage, "expert");
+    thread = { ...thread, caseStatus: status };
+    updateThreads(thread);
+
+    patchState({ anomalyCases: { ...workflow.anomalyCases, [measurementId]: { ...nextCase, conversationId: thread.id } } });
+  }
+
+  function upsertMonthlyReport(patch: Partial<MonthlyReport>) {
+    if (!selectedMonth) return;
+    const current = workflow.monthlyReports[selectedMonth] ?? {
+      month: selectedMonth,
+      status: "Draft",
+      operatorNote: "",
+      expertComment: "",
+      conversationId: null,
+      updatedAt: isoNow()
+    };
+    patchState({ monthlyReports: { ...workflow.monthlyReports, [selectedMonth]: { ...current, ...patch, updatedAt: isoNow() } } });
+  }
+
+  function sendReportForReview() {
+    if (!selectedMonth) return;
+    let report = workflow.monthlyReports[selectedMonth];
+    if (!report) {
+      report = {
+        month: selectedMonth,
+        status: "Draft",
+        operatorNote: "",
+        expertComment: "",
+        conversationId: null,
+        updatedAt: isoNow()
+      };
+    }
+
+    let thread = report.conversationId ? workflow.messageThreads.find((item) => item.id === report.conversationId) : undefined;
+    if (!thread) {
+      thread = createReportThread({ month: selectedMonth, reportStatus: "Awaiting expert review", note: report.operatorNote || "Monthly report sent for review." });
+    } else {
+      thread = appendMessage(thread, createTextMessage({ sender: "julia", kind: "report-card", body: `Monthly report ${labelForMonth(selectedMonth)} sent for review.` }), "operator");
+      thread = { ...thread, reportStatus: "Awaiting expert review" };
+    }
+
+    updateThreads(thread);
+    patchState({
+      monthlyReports: {
+        ...workflow.monthlyReports,
+        [selectedMonth]: { ...report, status: "Awaiting expert review", conversationId: thread.id, updatedAt: isoNow() }
+      },
+      activeModule: "messages"
+    });
+    setActiveThreadId(thread.id);
+  }
+
+  function approveReport() {
+    if (!selectedMonth) return;
+    upsertMonthlyReport({ status: "Approved" });
+  }
+
+  function requestReportChanges() {
+    if (!selectedMonth) return;
+    upsertMonthlyReport({ status: "Awaiting expert review" });
+  }
+
+  function resetPrototypeData() {
+    const confirmed = window.confirm("Reset prototype workflow data and preferences?");
+    if (!confirmed) return;
+    resetState();
+    patchState({ ...getDefaultPersistedState() });
+    setActiveThreadId(null);
+  }
+
+  function handleSignOut() {
+    window.alert("Sign out is demonstration-only in this PoC. Authentication is not connected.");
+  }
+
   if (isLoading || !currentAnalysis) {
     return (
       <div className="app-shell">
         <Sidebar
-          mode={mode}
-          setMode={setMode}
-          selectedPeriod={selectedPeriod}
-          setSelectedPeriod={setSelectedPeriod}
-          selectedScenario={selectedScenario}
-          loadScenario={loadScenario}
+          role={workflow.role}
+          mode={workflow.mode}
+          selectedPeriod={workflow.selectedPeriod}
+          selectedScenario={workflow.selectedScenario}
+          activeModule={workflow.activeModule}
           isAnalyzing={isAnalyzing}
+          onModeChange={(mode) => patchState({ mode })}
+          onPeriodChange={(selectedPeriod) => patchState({ selectedPeriod })}
+          onScenarioChange={(selectedScenario) => void loadScenario(selectedScenario)}
+          onModuleChange={(activeModule) => patchState({ activeModule })}
+          onRoleChange={switchRole}
+          onResetData={resetPrototypeData}
+          onSignOut={handleSignOut}
         />
         <main className="main">
           <div className="empty-state">
@@ -444,13 +511,19 @@ function App() {
   return (
     <div className="app-shell">
       <Sidebar
-        mode={mode}
-        setMode={setMode}
-        selectedPeriod={selectedPeriod}
-        setSelectedPeriod={setSelectedPeriod}
-        selectedScenario={selectedScenario}
-        loadScenario={loadScenario}
+        role={workflow.role}
+        mode={workflow.mode}
+        selectedPeriod={workflow.selectedPeriod}
+        selectedScenario={workflow.selectedScenario}
+        activeModule={workflow.activeModule}
         isAnalyzing={isAnalyzing}
+        onModeChange={(mode) => patchState({ mode })}
+        onPeriodChange={(selectedPeriod) => patchState({ selectedPeriod })}
+        onScenarioChange={(selectedScenario) => void loadScenario(selectedScenario)}
+        onModuleChange={(activeModule) => patchState({ activeModule })}
+        onRoleChange={switchRole}
+        onResetData={resetPrototypeData}
+        onSignOut={handleSignOut}
       />
 
       <main className="main">
@@ -459,20 +532,16 @@ function App() {
             <span className="eyebrow">SMARTCONTROL 2.0 | Plant_01</span>
             <h1>Model-backed monitoring dashboard</h1>
             <p className="muted">
-              Historical workbook period {metadata.dataset_date_range.start} through {metadata.dataset_date_range.end}; current analysis is a submitted measurement.
+              Active user: {workflow.role === "expert" ? `${identities.bernd.name} (${identities.bernd.subtitle})` : `${identities.julia.name} (${identities.julia.subtitle})`}
             </p>
           </div>
 
           <div className="top-actions">
-            <DataSourceIndicator
-              dataSource={dataSource}
-              isApiConnected={isApiConnected}
-              isAnalyzeAvailable={isAnalyzeAvailable}
-            />
-            <button className="secondary-button" type="button" onClick={openDrawer}>
+            <DataSourceIndicator dataSource={dataSource} isApiConnected={isApiConnected} isAnalyzeAvailable={isAnalyzeAvailable} />
+            <button className="secondary-button" type="button" onClick={() => setDrawerOpen(true)}>
               <SlidersHorizontal size={17} aria-hidden="true" /> Analyze
             </button>
-            <button className="icon-button" type="button" onClick={resetToLatest} aria-label="Reset to latest measurement">
+            <button className="icon-button" type="button" onClick={() => void loadScenario("latest")} aria-label="Reset to latest measurement">
               <RefreshCw size={17} aria-hidden="true" />
             </button>
           </div>
@@ -481,53 +550,100 @@ function App() {
         {apiError && <div className="error-box" role="alert">{apiError}</div>}
         <div className="sr-only" aria-live="polite">{announcement}</div>
 
-        <StatusStrip analysis={currentAnalysis} dataSource={dataSource} unifiedStatus={unifiedStatus} />
-        <DataContextPanel context={analysisContext} metadata={metadata} />
-        {isAiOnlyAnomaly(currentAnalysis) && <AiOnlyAnomalyBanner analysis={currentAnalysis} metadata={metadata} />}
-
-        {mode === "Normal" ? (
-          <NormalMode
+        {workflow.activeModule === "dashboard" && (
+          <DashboardView
+            mode={workflow.mode}
             analysis={currentAnalysis}
+            context={analysisContext}
+            metadata={metadata}
+            dataSource={dataSource}
             dailyData={dailyData}
             periodHistory={periodHistory}
             kpis={kpis}
-            metadata={metadata}
-            selectedMetric={selectedChartMetric}
-            setSelectedMetric={setSelectedChartMetric}
-            metricInfo={selectedMetricInfo}
-          />
-        ) : (
-          <AdvancedMode
-            analysis={currentAnalysis}
-            periodHistory={periodHistory}
-            dailyData={dailyData}
-            metadata={metadata}
-            selectedMetric={selectedChartMetric}
-            setSelectedMetric={setSelectedChartMetric}
-            metricInfo={selectedMetricInfo}
+            selectedMetric={workflow.selectedChartMetric}
+            setSelectedMetric={(selectedChartMetric) => patchState({ selectedChartMetric })}
+            reportHref={reportHref}
+            printReport={printReport}
+            caseItem={selectedCase}
           />
         )}
 
-        <section className="panel" style={{ marginTop: 14 }}>
-          <div className="panel-header">
-            <div>
-              <h2>Report</h2>
-              <p className="muted">Self-contained HTML generated from current API and selected-period history.</p>
-            </div>
-            <div className="report-actions">
-              <a
-                className="secondary-button"
-                href={reportHref}
-                download={`smartcontrol-report-${selectedScenario}.html`}
-              >
-                <Download size={17} aria-hidden="true" /> Download HTML
-              </a>
-              <button className="secondary-button" type="button" onClick={printReport}>
-                <Printer size={17} aria-hidden="true" /> Print
-              </button>
-            </div>
-          </div>
-        </section>
+        {workflow.activeModule === "anomaly-detection" && (
+          <>
+            <AnomalyDetectionView
+              records={periodHistory}
+              selectedMeasurementId={workflow.selectedMeasurementId}
+              currentAnalysis={currentAnalysis}
+              caseItem={selectedCase}
+              onSelectMeasurement={(measurementId) => void selectMeasurement(measurementId)}
+              onSubmitForReview={submitForReview}
+              onSendToMessages={sendAnalysisToMessages}
+            />
+            {workflow.role === "expert" && (
+              <section className="panel" style={{ marginTop: 12 }}>
+                <div className="panel-header">
+                  <div>
+                    <h2>Expert review controls</h2>
+                    <p className="muted">Confirm anomaly, mark false alarm, request more data, define operator measures, and close case.</p>
+                  </div>
+                </div>
+                <label className="field">
+                  <span>Reply to Julia</span>
+                  <textarea className="message-input" rows={3} value={expertReply} onChange={(event) => setExpertReply(event.target.value)} />
+                </label>
+                <label className="field">
+                  <span>Operator measures</span>
+                  <textarea className="message-input" rows={3} value={operatorMeasures} onChange={(event) => setOperatorMeasures(event.target.value)} />
+                </label>
+                <div className="drawer-actions">
+                  <button className="secondary-button" type="button" onClick={() => updateCaseFromExpert("Anomaly confirmed", "Anomaly confirmed")}>Confirm anomaly</button>
+                  <button className="secondary-button" type="button" onClick={() => updateCaseFromExpert("False alarm", "False alarm")}>Mark false alarm</button>
+                  <button className="secondary-button" type="button" onClick={() => updateCaseFromExpert("More data requested", "Request more data")}>Request more data</button>
+                  <button className="primary-button" type="button" onClick={() => updateCaseFromExpert("Closed", selectedCase?.expertDecision ?? null)}>Close case</button>
+                </div>
+              </section>
+            )}
+          </>
+        )}
+
+        {(workflow.activeModule === "monthly-report" || workflow.activeModule === "monthly-report-review") && (
+          <MonthlyReportView
+            role={workflow.role}
+            records={historyRecords}
+            availableMonths={months}
+            selectedMonth={selectedMonth}
+            report={selectedReport}
+            onSelectMonth={(selectedReportMonth) => patchState({ selectedReportMonth })}
+            onGenerate={() => upsertMonthlyReport({ status: "Draft" })}
+            onSaveReport={(patch) => upsertMonthlyReport(patch)}
+            onSendForReview={sendReportForReview}
+            onApprove={approveReport}
+            onRequestChanges={requestReportChanges}
+          />
+        )}
+
+        {workflow.activeModule === "review-queue" && (
+          <ReviewQueueView
+            cases={Object.values(workflow.anomalyCases)
+              .filter((item) => item.status !== "Closed")
+              .map((item) => ({ caseItem: item, record: historyRecords.find((record) => record.measurement_id === item.measurementId) }))}
+            onOpenCase={(measurementId) => {
+              void selectMeasurement(measurementId);
+              patchState({ activeModule: "anomaly-detection", selectedMeasurementId: measurementId });
+            }}
+          />
+        )}
+
+        {workflow.activeModule === "messages" && (
+          <MessagesView
+            role={workflow.role}
+            threads={workflow.messageThreads}
+            activeThreadId={activeThreadId}
+            onSelectThread={selectThread}
+            onSendMessage={sendMessage}
+            onCreateThread={createGeneralThread}
+          />
+        )}
 
         <BuildInfoFooter />
       </main>
@@ -547,694 +663,16 @@ function App() {
   );
 }
 
-function Sidebar(props: {
-  mode: DashboardMode;
-  setMode: (mode: DashboardMode) => void;
-  selectedPeriod: PeriodKey;
-  setSelectedPeriod: (period: PeriodKey) => void;
-  selectedScenario: ScenarioKey;
-  loadScenario: (scenario: ScenarioKey) => Promise<void>;
-  isAnalyzing: boolean;
-}) {
-  return (
-    <aside className="sidebar">
-      <div className="brand">
-        <img src="/assets/logo-oekobit.png" alt="OEKOBIT" />
-      </div>
-      <span className="scope-chip">Plant_01 model scope</span>
-
-      <div className="sidebar-section">
-        <span className="sidebar-label">Mode</span>
-        <div className="segmented" role="group" aria-label="Dashboard mode">
-          {(["Normal", "Advanced"] as const).map((item) => (
-            <button
-              key={item}
-              type="button"
-              className={props.mode === item ? "active" : ""}
-              onClick={() => props.setMode(item)}
-            >
-              {item === "Normal" ? <Gauge size={16} aria-hidden="true" /> : <Settings2 size={16} aria-hidden="true" />}
-              {item}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="sidebar-section">
-        <span className="sidebar-label">Period</span>
-        <div className="period-controls" role="group" aria-label="History period">
-          {(["7", "30", "all"] as const).map((item) => (
-            <button
-              key={item}
-              type="button"
-              className={props.selectedPeriod === item ? "active" : ""}
-              onClick={() => props.setSelectedPeriod(item)}
-            >
-              <History size={16} aria-hidden="true" />
-              {periodLabels[item]}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="sidebar-section">
-        <span className="sidebar-label">Scenario</span>
-        <div className="scenario-controls">
-          {(["latest", "ai-anomaly", "critical-rule", "custom"] as const).map((scenario) => (
-            <button
-              key={scenario}
-              type="button"
-              className={props.selectedScenario === scenario ? "active" : ""}
-              onClick={() => void props.loadScenario(scenario)}
-              disabled={props.isAnalyzing}
-            >
-              {scenario === "latest" && <CheckCircle2 size={16} aria-hidden="true" />}
-              {scenario === "ai-anomaly" && <BrainCircuit size={16} aria-hidden="true" />}
-              {scenario === "critical-rule" && <AlertTriangle size={16} aria-hidden="true" />}
-              {scenario === "custom" && <ClipboardList size={16} aria-hidden="true" />}
-              {scenarioLabels[scenario]}
-            </button>
-          ))}
-        </div>
-      </div>
-    </aside>
-  );
-}
-
-function DataSourceIndicator(props: {
-  dataSource: DataSourceState;
-  isApiConnected: boolean;
-  isAnalyzeAvailable: boolean;
-}) {
-  return (
-    <div className="data-source" aria-label="Data source status">
-      <span className={`badge ${props.isApiConnected ? "connected" : "error"}`}>
-        <Database size={14} aria-hidden="true" />
-        {props.isApiConnected ? "Live API connected" : "API unavailable"}
-      </span>
-      <span className={`badge ${props.dataSource === "Static historical fallback" ? "fallback" : "connected"}`}>
-        <Activity size={14} aria-hidden="true" />
-        {props.dataSource}
-      </span>
-      {!props.isAnalyzeAvailable && <span className="badge error">Live analysis disabled</span>}
-    </div>
-  );
-}
-
-function DataContextPanel(props: {
-  context: AnalysisContext | null;
-  metadata: ApiMetadata;
-}) {
-  const context = props.context ?? {
-    measurementId: "Unknown",
-    measurementDate: "Unknown",
-    plantId: "Plant_01",
-    scenarioLabel: "Current measurement",
-    sourceLabel: "Analysis context is being prepared",
-    submittedAt: new Date().toISOString()
-  };
-
-  return (
-    <section className="context-panel" aria-label="Current data context">
-      <div>
-        <span className="sidebar-label">Current data context</span>
-        <h2>{context.scenarioLabel}</h2>
-        <p className="muted">{context.sourceLabel}</p>
-      </div>
-      <div className="context-items">
-        <ContextItem label="Measurement ID" value={context.measurementId} />
-        <ContextItem label="Measurement date" value={context.measurementDate} />
-        <ContextItem label="Plant" value={context.plantId} />
-        <ContextItem label="Model scope" value={props.metadata.model_scope} />
-        <ContextItem label="History rows" value={String(props.metadata.historical_row_count)} />
-        <ContextItem label="Submitted" value={formatTimestamp(context.submittedAt)} />
-      </div>
-    </section>
-  );
-}
-
-function ContextItem(props: { label: string; value: string }) {
-  return (
-    <div className="context-item">
-      <span>{props.label}</span>
-      <strong>{props.value}</strong>
-    </div>
-  );
-}
-
-function AiOnlyAnomalyBanner(props: {
-  analysis: AnalysisResult;
-  metadata: ApiMetadata;
-}) {
-  const distance = props.analysis.anomaly_score - props.metadata.anomaly_threshold;
-
-  return (
-    <section className="ai-only-banner" aria-label="AI-only anomaly explanation">
-      <div className="ai-only-heading">
-        <div>
-          <span className="sidebar-label">AI-only anomaly</span>
-          <h2>No deterministic rule threshold was crossed</h2>
-          <p>
-            All six rule checks are Normal. The Isolation Forest flagged this measurement because the combined
-            process pattern is unusual relative to the Plant_01 workbook history.
-          </p>
-        </div>
-        <BrainCircuit size={30} aria-hidden="true" />
-      </div>
-      <div className="ai-only-facts">
-        <ContextItem label="Rule-based status" value={props.analysis.overall_rule_status} />
-        <ContextItem label="AI anomaly status" value={props.analysis.anomaly_flag} />
-        <ContextItem label="Signed score" value={numberFormat(props.analysis.anomaly_score, 5)} />
-        <ContextItem label="Threshold" value={numberFormat(props.metadata.anomaly_threshold, 0)} />
-        <ContextItem label="Distance above threshold" value={numberFormat(distance, 5)} />
-        <ContextItem label="Trigger source" value={displayTriggerSource(props.analysis.trigger_source)} />
-      </div>
-      <p>
-        <strong>{props.analysis.possible_issue_category ?? "Unusual process relationship"}:</strong>{" "}
-        {props.analysis.short_explanation}
-      </p>
-      <p>
-        <strong>Recommended action:</strong> {props.analysis.recommended_action}
-      </p>
-    </section>
-  );
-}
-
-function StatusStrip(props: {
-  analysis: AnalysisResult;
-  unifiedStatus: Severity;
-  dataSource: string;
-}) {
-  const analysisTime = new Date().toLocaleString();
-
-  return (
-    <section className="status-grid" aria-label="Current status summary">
-      <div className="status-panel primary-status">
-        <span className="sidebar-label">Unified status</span>
-        <div className="status-value">
-          <span className={`status-pill ${severityClass(props.unifiedStatus)}`}>{props.unifiedStatus}</span>
-        </div>
-        <p className="muted">Critical rule wins; otherwise warning includes rule warnings or AI anomaly.</p>
-      </div>
-      <StatusSmall label="Rule-based status" value={props.analysis.overall_rule_status} severity={props.analysis.overall_rule_status} />
-      <StatusSmall label="AI anomaly status" value={props.analysis.anomaly_flag} severity={props.analysis.anomaly_flag === "Anomaly" ? "Warning" : "Normal"} />
-      <StatusSmall label="Expert review" value={props.analysis.expert_review_required} severity={props.analysis.expert_review_required === "Yes" ? "Warning" : "Normal"} />
-      <div className="status-panel">
-        <span className="sidebar-label">Context</span>
-        <strong>{displayTriggerSource(props.analysis.trigger_source)}</strong>
-        <p className="muted">{props.dataSource}</p>
-        <p className="muted">{analysisTime}</p>
-      </div>
-    </section>
-  );
-}
-
-function StatusSmall(props: { label: string; value: string; severity: Severity }) {
-  return (
-    <div className="status-panel">
-      <span className="sidebar-label">{props.label}</span>
-      <strong className={`status-pill ${severityClass(props.severity)}`}>{props.value}</strong>
-    </div>
-  );
-}
-
-function NormalMode(props: {
-  analysis: AnalysisResult;
-  dailyData: ReturnType<typeof aggregateDaily>;
-  periodHistory: HistoryRecord[];
-  kpis: ReturnType<typeof calculatePeriodKpis>;
-  metadata: ApiMetadata;
-  selectedMetric: ChartMetric;
-  setSelectedMetric: (metric: ChartMetric) => void;
-  metricInfo: { key: ChartMetric; label: string; unit: string };
-}) {
-  const metricCards: Array<{
-    label: string;
-    value: number | string;
-    unit: string;
-    status: Severity;
-    reference: string;
-    explanation: string;
-    trendKey: ChartMetric;
-  }> = [
-    {
-      label: "pH",
-      value: props.analysis.ph_value,
-      unit: "pH",
-      status: props.analysis.ph_alert,
-      reference: props.metadata.rule_thresholds.ph.normal,
-      explanation: "Biological operating acidity is checked against backend pH rules.",
-      trendKey: "ph_value" as ChartMetric
-    },
-    {
-      label: "Temperature",
-      value: props.analysis.temperature_c,
-      unit: "deg C",
-      status: props.analysis.temperature_alert,
-      reference: props.metadata.rule_thresholds.temperature.normal,
-      explanation: "Digester temperature is monitored for mesophilic operating stability.",
-      trendKey: "temperature_c" as ChartMetric
-    },
-    {
-      label: "Oxygen",
-      value: props.analysis.oxygen_percent,
-      unit: "%",
-      status: props.analysis.oxygen_alert,
-      reference: props.metadata.rule_thresholds.oxygen.normal,
-      explanation: "Oxygen is checked directly against backend oxygen rules.",
-      trendKey: "oxygen_percent" as ChartMetric
-    },
-    {
-      label: "Methane",
-      value: props.analysis.methane_percent,
-      unit: "%",
-      status: props.analysis.methane_alert,
-      reference: props.metadata.rule_thresholds.methane.normal,
-      explanation: "Methane concentration supports gas quality review.",
-      trendKey: "methane_percent" as ChartMetric
-    },
-    {
-      label: "H2S",
-      value: props.analysis.h2s_ppm,
-      unit: "ppm",
-      status: props.analysis.h2s_alert,
-      reference: props.metadata.rule_thresholds.h2s.normal,
-      explanation: "H2S is tracked for gas-treatment and equipment-protection risk.",
-      trendKey: "h2s_ppm" as ChartMetric
-    },
-    {
-      label: "Maintenance",
-      value: props.analysis.maintenance_status,
-      unit: "",
-      status: props.analysis.maintenance_alert,
-      reference: props.metadata.rule_thresholds.maintenance.normal,
-      explanation: "Maintenance combines status, vibration, and pressure checks.",
-      trendKey: "compressor_vibration_mm_s" as ChartMetric
-    }
-  ];
-
-  return (
-    <div className="dashboard-grid">
-      <div className="advanced-section">
-        <section className="panel">
-          <div className="panel-header">
-            <div>
-              <h2>Operational cards</h2>
-              <p className="muted">Current submitted measurement with compact daily mean trends.</p>
-            </div>
-          </div>
-          <div className="metric-grid">
-            {metricCards.map((card) => (
-              <MetricCard key={card.label} {...card} dailyData={props.dailyData} />
-            ))}
-          </div>
-        </section>
-
-        <TrendPanel
-          dailyData={props.dailyData}
-          selectedMetric={props.selectedMetric}
-          setSelectedMetric={props.setSelectedMetric}
-          metricInfo={props.metricInfo}
-        />
-      </div>
-
-      <div className="advanced-section">
-        <section className="panel">
-          <div className="panel-header">
-            <div>
-              <h2>Executive summary</h2>
-              <p className="muted">Plain-language interpretation from the pipeline.</p>
-            </div>
-            <FileText size={20} aria-hidden="true" />
-          </div>
-          <div className="diagnostic-list">
-            <DiagnosticLine label="Issue category" value={props.analysis.possible_issue_category ?? "None" } />
-            <DiagnosticLine label="Explanation" value={props.analysis.short_explanation} />
-            <DiagnosticLine label="Recommended action" value={props.analysis.recommended_action} />
-          </div>
-        </section>
-
-        <section className="panel">
-          <div className="panel-header">
-            <div>
-              <h2>Period KPIs</h2>
-              <p className="muted">Derived only from the selected history period.</p>
-            </div>
-          </div>
-          <div className="kpi-grid">
-            <Kpi label="Average methane" value={`${numberFormat(props.kpis.averageMethane, 1)}%`} />
-            <Kpi label="Average biogas yield" value={`${numberFormat(props.kpis.averageBiogasYield, 2)} m3/t`} />
-            <Kpi label="Average gas flow" value={`${numberFormat(props.kpis.averageGasFlow, 1)} m3/h`} />
-            <Kpi label="AI anomaly rate" value={percent(props.kpis.aiAnomalyRate)} />
-            <Kpi label="Warning/critical rule rate" value={percent(props.kpis.ruleEscalationRate)} />
-            <Kpi label="Expert-review count" value={String(props.kpis.expertReviewCount)} />
-            <Kpi label="Maintenance overdue" value={String(props.kpis.maintenanceOverdueCount)} />
-            <Kpi label="Raw observations" value={String(props.periodHistory.length)} />
-          </div>
-        </section>
-      </div>
-    </div>
-  );
-}
-
-function MetricCard(props: {
-  label: string;
-  value: number | string;
-  unit: string;
-  status: Severity;
-  reference: string;
-  explanation: string;
-  trendKey: ChartMetric;
-  dailyData: ReturnType<typeof aggregateDaily>;
-}) {
-  const trend = props.dailyData.slice(-14).map((item) => item[props.trendKey]);
-
-  return (
-    <article className="metric-card">
-      <div className="metric-top">
-        <div>
-          <h3>{props.label}</h3>
-          <div className="metric-value">
-            {typeof props.value === "number" ? compactNumber(props.value) : props.value}
-            {props.unit && <span className="metric-unit"> {props.unit}</span>}
-          </div>
-        </div>
-        <span className={`status-pill ${severityClass(props.status)}`}>{props.status}</span>
-      </div>
-      <SimpleSparkline values={trend} />
-      <p className="muted">Reference: {props.reference}</p>
-      <p>{props.explanation}</p>
-    </article>
-  );
-}
-
-function SimpleSparkline(props: { values: number[] }) {
-  const width = 220;
-  const height = 36;
-  const values = props.values.filter((value) => Number.isFinite(value));
-  if (values.length < 2) {
-    return <svg className="sparkline" viewBox={`0 0 ${width} ${height}`} aria-hidden="true" />;
-  }
-
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
-  const points = values.map((value, index) => {
-    const x = (index / (values.length - 1)) * width;
-    const y = height - ((value - min) / range) * (height - 4) - 2;
-    return `${x},${y}`;
-  }).join(" ");
-
-  return (
-    <svg className="sparkline" viewBox={`0 0 ${width} ${height}`} aria-label="Daily mean trend">
-      <polyline points={points} fill="none" stroke="#008eca" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function TrendPanel(props: {
-  dailyData: ReturnType<typeof aggregateDaily>;
-  selectedMetric: ChartMetric;
-  setSelectedMetric: (metric: ChartMetric) => void;
-  metricInfo: { key: ChartMetric; label: string; unit: string };
-}) {
-  const chartData = props.dailyData.map((item) => ({
-    date: item.date,
-    mean: item[props.selectedMetric],
-    min: item.min[props.selectedMetric],
-    max: item.max[props.selectedMetric]
-  }));
-
-  return (
-    <section className="panel">
-      <div className="panel-header">
-        <div>
-          <h2>Executive trend</h2>
-          <p className="muted">Daily mean with daily min/max range from raw workbook observations.</p>
-        </div>
-        <select
-          aria-label="Trend metric"
-          value={props.selectedMetric}
-          onChange={(event) => props.setSelectedMetric(event.target.value as ChartMetric)}
-        >
-          {chartMetrics.map((metric) => (
-            <option key={metric.key} value={metric.key}>{metric.label}</option>
-          ))}
-        </select>
-      </div>
-      <div className="chart-box">
-        <ResponsiveContainer>
-          <LineChart data={chartData} margin={{ left: 8, right: 16, top: 8, bottom: 8 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#dfe7e9" />
-            <XAxis dataKey="date" tick={{ fontSize: 11 }} minTickGap={22} />
-            <YAxis tick={{ fontSize: 11 }} width={54} />
-            <Tooltip formatter={(value) => numberFormat(Number(value), 3)} />
-            <Legend />
-            <Line type="monotone" dataKey="mean" name={`${props.metricInfo.label} daily mean`} stroke="#008eca" strokeWidth={2.5} dot={false} />
-            <Line type="monotone" dataKey="min" name="Daily min" stroke="#7fb743" strokeWidth={1.5} dot={false} />
-            <Line type="monotone" dataKey="max" name="Daily max" stroke="#d98c23" strokeWidth={1.5} dot={false} />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-    </section>
-  );
-}
-
-function AdvancedMode(props: {
-  analysis: AnalysisResult;
-  periodHistory: HistoryRecord[];
-  dailyData: ReturnType<typeof aggregateDaily>;
-  metadata: ApiMetadata;
-  selectedMetric: ChartMetric;
-  setSelectedMetric: (metric: ChartMetric) => void;
-  metricInfo: { key: ChartMetric; label: string; unit: string };
-}) {
-  const diagnostics = props.analysis.diagnostics;
-  const currentRuleBreakdown = ruleBreakdown(props.analysis);
-  const ruleCountSummary = currentRuleBreakdown.map((item) => `${item.status}: ${item.count}`).join(" | ");
-  const rawChartData = props.periodHistory.map((record) => ({
-    measurement_id: record.measurement_id,
-    value: record[props.selectedMetric],
-    date: record.date
-  }));
-  const anomalyData = props.periodHistory.map((record) => ({
-    measurement_id: record.measurement_id,
-    anomaly_score: record.anomaly_score,
-    current: undefined as number | undefined
-  }));
-  anomalyData.push({
-    measurement_id: "Current",
-    anomaly_score: props.analysis.anomaly_score,
-    current: props.analysis.anomaly_score
-  });
-  const positiveScoreCount = props.periodHistory.filter((record) => record.anomaly_score > 0).length;
-  const radarData = diagnostics ? [
-    ["Gas-flow residual", diagnostics.robust_metrics.gas_flow_residual.robust_z_score],
-    ["Biogas yield", diagnostics.robust_metrics.biogas_yield_m3_per_ton.robust_z_score],
-    ["Methane/CO2", diagnostics.robust_metrics.methane_to_co2_ratio.robust_z_score],
-    ["H2S", diagnostics.robust_metrics.h2s_ppm.robust_z_score],
-    ["Vibration", diagnostics.robust_metrics.compressor_vibration_mm_s.robust_z_score],
-    ["Pressure", diagnostics.robust_metrics.pressure_bar.robust_z_score]
-  ].map(([metric, value]) => ({
-    metric,
-    magnitude: Math.min(Math.abs(Number(value ?? 0)), 4),
-    actual: Number(value ?? 0)
-  })) : [];
-
-  return (
-    <div className="advanced-section">
-      <div className="advanced-grid">
-        <section className="panel">
-          <div className="panel-header">
-            <div>
-              <h2>Rule-Based Monitoring</h2>
-              <p className="muted">Exact backend rule outputs and thresholds.</p>
-            </div>
-          </div>
-          <p className="analysis-note">
-            Rule-based monitoring and Isolation Forest answer different questions. Rule checks test individual
-            operating limits; Isolation Forest evaluates the combined process pattern.
-          </p>
-          <p className="muted" style={{ marginBottom: 10 }}>Current rule count summary: {ruleCountSummary}.</p>
-          <div className="rule-list">
-            {ruleRows.map((rule) => {
-              const status = props.analysis[rule.alert] as Severity;
-              const value = props.analysis[rule.value];
-              const threshold = props.metadata.rule_thresholds[rule.key];
-              return (
-                <div className="rule-row" key={rule.key}>
-                  <div>
-                    <strong>{rule.label}</strong>
-                    <p className="muted">
-                      {String(value)} {rule.unit} | Normal {threshold.normal}; Warning {threshold.warning}; Critical {threshold.critical}
-                    </p>
-                  </div>
-                  <span className={`status-pill ${severityClass(status)}`}>{status}</span>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="panel">
-          <div className="panel-header">
-            <div>
-              <h2>Isolation Forest</h2>
-              <p className="muted">Signed Isolation Forest decision score. Values above zero are classified as anomalous.</p>
-            </div>
-          </div>
-          <div className="diagnostic-list">
-            <DiagnosticLine label="Raw anomaly score" value={numberFormat(props.analysis.anomaly_score, 5)} />
-            <DiagnosticLine label="Threshold" value="0" />
-            <DiagnosticLine label="Distance from threshold" value={numberFormat(props.analysis.anomaly_score - props.metadata.anomaly_threshold, 5)} />
-            <DiagnosticLine label="Anomaly flag" value={props.analysis.anomaly_flag} />
-            <DiagnosticLine label="Contamination" value={numberFormat(props.metadata.isolation_forest_contamination, 3)} />
-            <DiagnosticLine label="Trigger source" value={displayTriggerSource(props.analysis.trigger_source)} />
-            <DiagnosticLine label="Expert review" value={props.analysis.expert_review_required} />
-          </div>
-          <p className="muted" style={{ marginTop: 12 }}>This score is not a probability or percentage and is not restricted to 0-1.</p>
-        </section>
-
-        <section className="panel">
-          <div className="panel-header">
-            <div>
-              <h2>Interpretation Reference</h2>
-              <p className="muted">Robust z-score threshold {props.metadata.robust_z_score_threshold}.</p>
-            </div>
-          </div>
-          {diagnostics ? (
-            <div className="diagnostic-list">
-              <DiagnosticLine label="Expected gas flow" value={`${numberFormat(diagnostics.expected_gas_flow_m3_h, 2)} m3/h`} />
-              <DiagnosticLine label="Actual gas flow" value={`${numberFormat(diagnostics.actual_gas_flow_m3_h, 2)} m3/h`} />
-              <DiagnosticLine label="Gas-flow residual" value={`${numberFormat(diagnostics.gas_flow_residual_m3_h, 2)} m3/h`} />
-              {Object.entries(diagnostics.robust_metrics).map(([key, metric]) => (
-                <DiagnosticLine
-                  key={key}
-                  label={key}
-                  value={`value ${numberFormat(metric.value, 3)} | median ${numberFormat(metric.median, 3)} | MAD ${numberFormat(metric.mad, 3)} | z ${numberFormat(metric.robust_z_score, 3)} | ${metric.deviation}`}
-                />
-              ))}
-            </div>
-          ) : (
-            <p className="muted">Diagnostics are available when live API analysis succeeds.</p>
-          )}
-        </section>
-      </div>
-
-      <div className="advanced-grid">
-        <section className="panel">
-          <div className="panel-header">
-            <div>
-              <h2>Raw observation chart</h2>
-              <p className="muted">Raw measurements ordered by date and measurement ID; no intraday timestamps are invented.</p>
-            </div>
-            <select
-              aria-label="Raw chart metric"
-              value={props.selectedMetric}
-              onChange={(event) => props.setSelectedMetric(event.target.value as ChartMetric)}
-            >
-              {chartMetrics.map((metric) => (
-                <option key={metric.key} value={metric.key}>{metric.label}</option>
-              ))}
-            </select>
-          </div>
-          <div className="chart-box">
-            <ResponsiveContainer>
-              <LineChart data={rawChartData} margin={{ left: 8, right: 16, top: 8, bottom: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#dfe7e9" />
-                <XAxis dataKey="measurement_id" tick={{ fontSize: 10 }} minTickGap={20} />
-                <YAxis tick={{ fontSize: 11 }} width={54} />
-                <Tooltip formatter={(value) => numberFormat(Number(value), 3)} />
-                <Line type="monotone" dataKey="value" name={`${props.metricInfo.label} raw`} stroke="#008eca" strokeWidth={2} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </section>
-
-        <section className="panel">
-          <div className="panel-header">
-            <div>
-              <h2>Anomaly-score chart</h2>
-              <p className="muted">{positiveScoreCount} positive historical scores in selected period.</p>
-            </div>
-          </div>
-          <div className="chart-box">
-            <ResponsiveContainer>
-              <LineChart data={anomalyData} margin={{ left: 8, right: 16, top: 8, bottom: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#dfe7e9" />
-                <XAxis dataKey="measurement_id" tick={{ fontSize: 10 }} minTickGap={20} />
-                <YAxis tick={{ fontSize: 11 }} width={54} />
-                <Tooltip formatter={(value) => numberFormat(Number(value), 5)} />
-                <ReferenceLine y={0} stroke="#9d1f16" label="Threshold 0" />
-                <Line type="monotone" dataKey="anomaly_score" name="Historical score" stroke="#4d6570" strokeWidth={1.8} dot={false} />
-                <Line type="monotone" dataKey="current" name="Current score" stroke="#d98c23" strokeWidth={3} dot />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </section>
-
-        <section className="panel">
-          <div className="panel-header">
-            <div>
-              <h2>Rule breakdown and robust z</h2>
-              <p className="muted">Six current rules plus absolute robust z-score magnitude.</p>
-            </div>
-          </div>
-          <div className="chart-box" style={{ height: 160 }}>
-            <ResponsiveContainer>
-              <BarChart data={currentRuleBreakdown} margin={{ left: 8, right: 16, top: 8, bottom: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#dfe7e9" />
-                <XAxis dataKey="status" tick={{ fontSize: 11 }} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
-                <Tooltip />
-                <Bar dataKey="count" fill="#008eca" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="chart-box" style={{ height: 230 }}>
-            <ResponsiveContainer>
-              <RadarChart data={radarData}>
-                <PolarGrid />
-                <PolarAngleAxis dataKey="metric" tick={{ fontSize: 10 }} />
-                <Tooltip formatter={(_value, _name, item) => numberFormat(item.payload.actual, 3)} />
-                <Radar name="|Robust z| clipped at 4; threshold 2.5" dataKey="magnitude" stroke="#008eca" fill="#008eca" fillOpacity={0.22} />
-              </RadarChart>
-            </ResponsiveContainer>
-          </div>
-        </section>
-      </div>
-    </div>
-  );
-}
-
-function DiagnosticLine(props: { label: string; value: string }) {
-  return (
-    <div className="diagnostic-row">
-      <strong>{props.label}</strong>
-      <span>{props.value}</span>
-    </div>
-  );
-}
-
-function Kpi(props: { label: string; value: string }) {
-  return (
-    <div className="kpi">
-      <span className="muted">{props.label}</span>
-      <strong>{props.value}</strong>
-    </div>
-  );
-}
-
 function BuildInfoFooter() {
   return (
     <footer className="build-footer" aria-label="Build and legacy links">
       <div>
         <strong>Model-backed React dashboard</strong>
         <span>Version {buildInfo.appVersion}</span>
-        <span>Commit {shortCommit(buildInfo.commitSha)}</span>
+        <span>Commit {buildInfo.commitSha === "local" ? "local" : buildInfo.commitSha.slice(0, 12)}</span>
         <span>Branch {buildInfo.commitRef}</span>
         <span>Environment {buildInfo.vercelEnv}</span>
-        <span>Built {formatTimestamp(buildInfo.buildDate)}</span>
+        <span>Built {new Date(buildInfo.buildDate).toLocaleString()}</span>
       </div>
       <a href="/legacy/" className="muted">Legacy static workflow prototype</a>
     </footer>
@@ -1247,7 +685,7 @@ function MeasurementDrawer(props: {
   onClose: () => void;
   onSubmit: (measurement: PlantMeasurement) => Promise<void>;
   isAnalyzing: boolean;
-  loadScenario: (scenario: ScenarioKey) => Promise<void>;
+  loadScenario: (scenario: "latest" | "ai-anomaly" | "critical-rule" | "custom") => Promise<void>;
   latestMeasurement?: HistoryRecord;
 }) {
   const [measurement, setMeasurement] = useState<PlantMeasurement>(props.initialMeasurement);
@@ -1261,10 +699,7 @@ function MeasurementDrawer(props: {
   }, []);
 
   function setField(key: keyof PlantMeasurement, value: string) {
-    setMeasurement((current) => ({
-      ...current,
-      [key]: key === "maintenance_status" ? value : Number(value)
-    }));
+    setMeasurement((current) => ({ ...current, [key]: key === "maintenance_status" ? value : Number(value) }));
   }
 
   async function submit() {
@@ -1324,10 +759,7 @@ function MeasurementDrawer(props: {
                 <label className="field" key={field.key}>
                   <span>{field.key}</span>
                   {field.key === "maintenance_status" ? (
-                    <select
-                      value={String(measurement[field.key])}
-                      onChange={(event) => setField(field.key, event.target.value)}
-                    >
+                    <select value={String(measurement[field.key])} onChange={(event) => setField(field.key, event.target.value)}>
                       {props.metadata.supported_maintenance_status_values.map((status) => (
                         <option key={status} value={status}>{status}</option>
                       ))}

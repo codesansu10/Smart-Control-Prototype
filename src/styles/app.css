@@ -586,6 +586,155 @@ th {
   background: #ffffff;
 }
 
+.workflow-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.row-active {
+  background: #f1f9fc;
+}
+
+.table-link {
+  border: 0;
+  background: transparent;
+  color: #0a6f9f;
+  font-weight: 800;
+  padding: 0;
+}
+
+.messages-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1.1fr);
+  gap: 14px;
+}
+
+.conversation-list {
+  display: grid;
+  gap: 8px;
+}
+
+.conversation-item {
+  border: 1px solid #dce5e7;
+  border-radius: 8px;
+  background: #fff;
+  text-align: left;
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.conversation-item.active {
+  border-color: #008eca;
+  background: #edf7fb;
+}
+
+.thread-messages {
+  display: grid;
+  gap: 10px;
+  max-height: 420px;
+  overflow: auto;
+}
+
+.message-card {
+  border: 1px solid #dce5e7;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fff;
+}
+
+.message-card.status {
+  background: #f7f8fa;
+}
+
+.message-card header {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+
+.message-input {
+  border: 1px solid #cfdadd;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font: inherit;
+}
+
+.user-switcher {
+  position: relative;
+}
+
+.user-card {
+  width: 100%;
+  border: 1px solid #dce5e7;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #e6f4fb;
+  color: #0a6f9f;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-main {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  flex: 1;
+}
+
+.user-main small {
+  color: #5f737a;
+}
+
+.user-menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 8px);
+  background: #fff;
+  border: 1px solid #dce5e7;
+  border-radius: 10px;
+  box-shadow: 0 10px 26px rgba(17, 47, 58, 0.12);
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+  z-index: 20;
+}
+
+.user-option {
+  border: 1px solid #dce5e7;
+  border-radius: 8px;
+  background: #fff;
+  padding: 8px 10px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.user-option.active {
+  background: #edf7fb;
+  border-color: #7ec5e2;
+}
+
+.user-option small {
+  display: block;
+  color: #5f737a;
+}
+
 .report-actions,
 .drawer-actions {
   display: flex;
@@ -634,7 +783,8 @@ th {
 
   .dashboard-grid,
   .context-panel,
-  .advanced-grid {
+  .advanced-grid,
+  .messages-layout {
     grid-template-columns: 1fr;
   }
 }

@@ -1,8 +1,20 @@
-export type DashboardMode = "Normal" | "Advanced";
+export type DashboardMode = "Basic" | "Advanced";
 export type ScenarioKey = "latest" | "ai-anomaly" | "critical-rule" | "custom";
 export type PeriodKey = "7" | "30" | "all";
 export type Severity = "Normal" | "Warning" | "Critical";
 export type AnomalyFlag = "Normal" | "Anomaly";
+export type UserRole = "operator" | "expert";
+export type WorkflowModule = "dashboard" | "anomaly-detection" | "monthly-report" | "messages" | "review-queue" | "monthly-report-review";
+export type CaseStatus =
+  | "Open"
+  | "Awaiting expert review"
+  | "More data requested"
+  | "Anomaly confirmed"
+  | "False alarm"
+  | "Closed";
+export type ExpertDecision = "Anomaly confirmed" | "False alarm" | "Request more data";
+export type ConversationType = "general" | "anomaly" | "monthly-report";
+export type ReportStatus = "Draft" | "Awaiting expert review" | "Approved" | "Sent";
 export type DataSourceState =
   | "Live API connected"
   | "Static historical fallback"
@@ -16,6 +28,50 @@ export interface AnalysisContext {
   scenarioLabel: string;
   sourceLabel: string;
   submittedAt: string;
+}
+
+export interface WorkflowCase {
+  measurementId: string;
+  note: string;
+  status: CaseStatus;
+  expertDecision: ExpertDecision | null;
+  expertReply: string;
+  operatorMeasures: string;
+  conversationId: string | null;
+  updatedAt: string;
+}
+
+export interface MessageEntry {
+  id: string;
+  sender: "julia" | "bernd" | "system";
+  senderLabel: string;
+  senderSubLabel: string;
+  body: string;
+  timestamp: string;
+  kind: "text" | "status" | "report-card" | "analysis-card";
+}
+
+export interface MessageThread {
+  id: string;
+  subject: string;
+  type: ConversationType;
+  measurementId?: string;
+  reportingMonth?: string;
+  messages: MessageEntry[];
+  unreadByOperator: number;
+  unreadByExpert: number;
+  caseStatus?: CaseStatus;
+  reportStatus?: ReportStatus;
+  lastActivityAt: string;
+}
+
+export interface MonthlyReport {
+  month: string;
+  status: ReportStatus;
+  operatorNote: string;
+  expertComment: string;
+  conversationId: string | null;
+  updatedAt: string;
 }
 
 export interface PlantMeasurement {
