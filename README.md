@@ -1,103 +1,98 @@
-# OEKOBIT Design System
+# SmartControl 2.0 Prototype
 
-A design system for **OEKOBIT Deutschland** — a German manufacturer of high-precision biogas plants ("Biogasanlagen Made in Germany"). OEKOBIT Deutschland is part of the **OEKOBIT GROUP**, an umbrella that also includes **OEKOBIT BIOGAS**, **GREENTEC INFRA** (kommunale Wasserwirtschaft), and **CONZEPT CONTAINER**. The company designs, plans, builds and services biogas, biomethane and waste-to-energy plants for agricultural, industrial, communal and residential customers.
+SmartControl 2.0 is a front-end proof of concept for monitoring a small fleet of OEKOBIT biogas and biomethane plants. It demonstrates how operators and process experts could review plant health, investigate grouped anomaly signals, exchange messages, and prepare customer-facing reporting.
 
-## Sources
+This repository is a static prototype with hard-coded demonstration data. It is not a production plant-control system, it does not connect to live plant infrastructure, and it must not be used for operational decisions.
 
-- **Figma file:** "Webseite OEKOBIT.fig" (mounted as a virtual filesystem during build). Two pages — `/Stylesets` (7 frames: Farben, Font-Size, Buttons, Spacing, Designelemente, Imagebox, Navigation) and `/Navigation-Menu` (9 frames including page mocks for Anlagensysteme, Anlagentechnik, Hauptmenü, and Gruppe).
-- **Codebase:** none provided.
-- **Slide template:** none provided.
+## Purpose
 
-## Audience and surfaces
+The prototype explores the interaction model for a future SmartControl experience:
 
-- The Figma is a **website** design (desktop-first, 1900px and 1700px breakpoints). There is no app and no mobile mock in the file.
-- Target reader is a German B2B buyer in agriculture, waste / industrial, or municipal energy infrastructure. The tone is technical, expert, and unmistakably German.
+- Fleet-level monitoring for an operator responsible for multiple plants.
+- Plant-level dashboards with process KPIs and anomaly context.
+- Expert review workflows between Julia User, the operator, and Bernd Biogas, the OEKOBIT process expert.
+- A simulated Plant Colleague assistant that explains the demo data using rule-based responses.
 
-## What this folder contains
+## Main Features
 
-- `colors_and_type.css` — design tokens (CSS custom properties) for color, type, spacing, radii, shadows and motion. Drop-in for any HTML mockup.
-- `assets/` — extracted brand assets: the OEKOBIT Deutschland wordmark, the OEKOBIT GROUP family map, hero photography of biogas plants, the default imagebox photo.
-- `preview/` — small HTML cards showing each token group, used by the Design System tab.
-- `ui_kits/website/` — high-fidelity recreation of the OEKOBIT website, with a sidebar layout, hero, info-box grid, and click-through pages.
-- `SKILL.md` — Agent SKILL packaging so this can be downloaded and used inside Claude Code.
-- `README.md` — this file.
+- Fleet dashboard with online plants, gas flow, alerts, availability, and data-quality indicators.
+- Plant dashboard with methane, H2S, gas flow, pH, temperature, pressure, and trend context.
+- Anomaly detection views that group related warning signals into a single reviewable event.
+- Basic and advanced detail levels for different operator needs.
+- Messaging inbox for plant-specific and general conversations.
+- Expert decision flow for confirming an anomaly, requesting more data, or marking a false alarm.
+- Local persistence for role, detail level, conversations, read state, case status, actions, measures, and report state.
+- Reset control for clearing saved prototype data and returning to the initial demo state.
 
-## Content fundamentals
+## Roles
 
-**Language.** German. The whole product is in German; English copy ("Design System", "Colors", "Font Size") is only used as labels in the design-system frames. When writing for OEKOBIT, write German.
+Julia User is the operator role. Julia can move through the fleet and plant dashboards, submit anomaly context for expert review, message the expert, and use the Plant Colleague assistant.
 
-**Voice.** Authoritative-technical and quietly confident. Sentences are long and precisely scoped — they describe what an installation does, who it is for, and which substrate it accepts. Marketing fluff is rare; numbers and equipment names are common (e.g. "Biomethananlagen", "Trockenfermentation", "Hofbiogasanlage").
+Bernd Biogas is the expert role. Bernd can review submitted anomaly cases, reply to the operator, request more data, mark false alarms, or confirm anomalies and define measures.
 
-**Pronouns.** Corporate **"wir"** (we) — "Wir entwickeln hochpräzise Biogasanlagen". The reader is rarely addressed directly with "Sie/du"; copy is descriptive, not imperative.
+## Plant Colleague Assistant
 
-**Tone signature — the brand quote** (set as a Zitat between two gradient Trennlinien):
-> "Mit Pioniergeist und Expertise entwickeln wir nachhaltige Energielösungen von morgen"
+The Plant Colleague is currently simulated. It does not call an AI service, does not use a backend, and does not inspect real sensor systems. Responses are generated by client-side rule logic from the current demo state, selected plant, and hard-coded sample data.
 
-**Casing.** Sentence case for body and headlines. Product names use Title-Case ("Hofbiogasanlage FarMethan", "Kleinstbiogasanlage HoMethan", "Trockenfermentation FeBio"). The wordmark is set in **uppercase** ("OEKOBIT DEUTSCHLAND"). Section labels in the navigation are sentence-case German nouns ("Biogasanlagen", "Anlagentechnik", "Gruppe", "Kontakt", "Sprache", "Anfrage").
+## Project Structure
 
-**Vocabulary.** German biogas vocabulary is the texture of the brand: *Biogasanlagen, Biomethananlagen, Anlagensysteme, Anlagentechnik, Substrate, Gasnutzung, Trockenfermentation, Hofbiogasanlage, Schlachtabfälle, Gülle, Mist, Nachwachsende Rohstoffe*. Do not anglicise this.
+- `index.html` - root static entry point for local serving and GitHub Pages.
+- `SmartControl Prototyp.dc.html` - main interactive prototype using the custom DC runtime.
+- `support.js` - generated DC runtime support file.
+- `colors_and_type.css` - OEKOBIT visual tokens used by the prototype.
+- `oekobit-flame.svg`, `oekobit-flame-white.svg`, `logo-oekobit.png` - visual assets.
+- `.github/workflows/deploy-pages.yml` - GitHub Pages deployment workflow.
+- `SmartControl Prototyp.html` - generated export kept for reference; the primary app entry is `index.html`.
 
-**Examples.**
-- Headline (h1, light-weight): "OEKOBIT Deutschland ist Teil der OEKOBIT GROUP"
-- Section headline (h2, regular, slight negative tracking): "Industrielle Biogasanlagen: Substratoptimierte Anlagen für Industrieprozesse und Verfahren."
-- Body (18px, line-height 1.8): long, comma-spliced, technical, ends decisively. "Industrielle Biogasanlagen sind die perfekte Lösung für Industrieunternehmen und Produktionsbetriebe, die ihre Prozesse und Verfahren optimieren möchten."
-- Eyebrow / label inside infoboxes (20px Light): "Typische Substrate:", "Ideal für:", "Mögliche Gasnutzung:" — colon-terminated, paired with a comma-separated noun list underneath.
-- CTA / menu copy is one or two German nouns: "Menü", "Biogasanlagen", "Kontakt", "Anfrage", "Sprache".
+## Run Locally
 
-**No emoji.** None appear in the Figma; do not add them.
+Use a static server from the repository root:
 
-## Visual foundations
+```bash
+python -m http.server 8080
+```
 
-**Palette.** Two strong text greys (`#576164` strong, `#798183` body), a near-white surface ladder (`#FFFFFF / #FAFAFA / #F4F5F5 / #F0F1F1`) and a single signature accent: the **OEKOBIT brand gradient** — yellow-green → green → emerald → teal → cyan → sky → blue. The gradient lives almost exclusively on the leaf logo and the **Trennlinie** (a 1px, 200px-wide horizontal divider). Solid blue (`#64BBE0` / `#CCE9F5`) appears as a vertical fill gradient on large primary buttons. The system has *no warm tones*, no red, no orange.
+Then open:
 
-**Type.** Single family — **Mulish**, in two weights (Light 300 and Regular 400). Light weight does the display work (h1 35px, h3/Zitat 25px, eyebrow 20px); Regular handles body and h2 (30px). Letter spacing is `-0.01em` on display sizes; otherwise 0. The body line-height is unusually loose (1.8) — that breathing room is a brand cue.
+```text
+http://localhost:8080/
+```
 
-**Spacing.** A 16-base scale: 4 / 8 / 12 / 16 / 24 / 32 / 48 / 64 / 96 / 128 / 160 / 192 / 256 / 384 / 512 / 640 / 768. Section padding is typically 48–96px; card padding 32 or 48px; gap inside info-boxes is 32px.
+Do not rely on `file://` for validation. Serving over HTTP better matches GitHub Pages and lets the browser load runtime files consistently.
 
-**Backgrounds.** Page is white. Hero and section panels are large rounded rectangles (`radius 18`, sometimes 25 for the outer content frame) on `#FAFAFA`. Photographs of green-field biogas plants (warm grass, blue sky, white tanks) sit *inside* rounded image cards (`radius 12 or 16`), never full-bleed against the page edge — the white margin around content is preserved. No textures, no patterns, no noise; gradients are reserved for the brand spectrum and blue button family.
+## GitHub Pages Deployment
 
-**Animation.** None present in the Figma. The design feels static and technical. When animating, keep it minimal: 120–320ms transitions on hover (background swap, opacity), no bounces, no parallax.
+The repository includes a GitHub Actions workflow that deploys the static site from the `main` branch.
 
-**Hover states.** Buttons darken one shade (`#F4F5F5 → #F0F1F1`), text steps from body grey (`#798183`) to strong grey (`#576164`). Blue large buttons fill with the blue gradient (`#64BBE0 → #CCE9F5`). Image cards likely darken by ~5%. No scaling, no lift on hover.
+1. Push changes to `main`.
+2. In GitHub, open the repository settings.
+3. Enable Pages with GitHub Actions as the source.
+4. The workflow deploys the repository root and serves the app through `index.html`.
 
-**Press states.** Not specified explicitly; treat as a slightly deeper surface (`#EAEBEB`) and no scale change.
+The prototype uses relative paths so it can run under the repository subpath:
 
-**Borders.** 1px hairlines in `#DDDFE0` only on small dividers under menu links. The bigger horizontal page-section divider is 1px solid `#576164`. No outlined cards.
+```text
+/Smart-Control-Prototype/
+```
 
-**Shadow / elevation.** Almost flat. Depth comes from surface tinting (white → `#FAFAFA` → `#F4F5F5`) rather than blur. Use a soft `0 4px 14px rgba(0,0,0,0.06)` only when an element must lift off photography.
+## Prototype Limitations
 
-**Transparency / blur.** None used in the source. Avoid backdrop-blur; it is off-brand.
+- All plant, anomaly, message, and report data is demonstration data stored in the front end.
+- Local persistence uses `localStorage`; it is per browser and can be cleared by the user.
+- The assistant is rule-based and simulated, not a connected AI agent.
+- There is no authentication, authorization, backend API, audit store, or real telemetry stream.
+- Expert decisions and report approvals are UI state only.
+- No API keys or secrets are required or included.
 
-**Corner radii.** 8 (small chips) / 12 (default cards, buttons, infoboxes) / 16 (image cards) / 18 (hero/section panels) / 25 (outer page frame). Buttons are *always rounded*, never pill or square.
+## Future Production Architecture
 
-**Cards.** Flat tinted rectangle, `#F4F5F5` (default) or `#FAFAFA` (light variant), `radius 12`, padding 32–48px, internal gap 32px. No border, no shadow. Two-column layout: 48×48 circle-icon on the left, eyebrow + paragraph on the right.
+A production version should introduce:
 
-**Layout rules.** Desktop layout fixes a 395-px-wide left navigation rail and a 1313-wide content frame on the right. Inside the content frame, sections are vertically stacked, full-width within the frame, with 64–96px vertical rhythm. Imagery and headlines split into 2-up columns at content widths above 1100px.
-
-**Imagery vibe.** Outdoor, daylight, slightly green-cast — green grass, yellow-green corn fields, white storage tanks, occasional aerial drone shots. Cool but not desaturated. No people-portraits in the source. No black-and-white. No grain.
-
-## Iconography
-
-The icon system is a small, **bespoke** SVG set — not a public icon font.
-
-- **Master motif.** A circle (`32×32` or `48×48`, 1px stroke) containing a **right-chevron** (`›`). This appears on every CTA, every navigation arrow, and as the "more" affordance on every imagebox. It is filled in body grey (`#798183`) by default and white on blue gradient buttons.
-- **Topical icons.** Each Anlagensystem has its own line icon, also drawn inside the same `48×48` outline circle: **Substrate** (sprouting plant), **Industrie** (factory silhouette), **Landwirtschaft** (tractor/silo), **Gasnutzung** (gas-flame inside a return-arrow). They live exclusively inside the *Infobereich mit Icon* card.
-- **Wordmark.** `assets/logo-oekobit.png` — the gradient leaf glyph + the "OEKOBIT DEUTSCHLAND" wordmark in dark grey (`#576164`). Use this; do not redraw.
-- **Group map.** `assets/oekobit-group-map.png` — a tree diagram showing OEKOBIT GROUP and its three brands (BIOGAS, GREENTEC INFRA, CONZEPT CONTAINER).
-- **No emoji. No unicode-as-icon.** Quote marks (`"…"`) appear in the Zitat block but are typographic, not iconic.
-
-**Substitution.** No public icon font exactly matches OEKOBIT's hand-drawn topical icons. Where this kit needs a generic UI icon (search, language, mail, phone, hamburger menu), it pulls from **Lucide** (CDN — `https://unpkg.com/lucide@latest`) at `1.5px stroke`, sized 24px, in `#798183`. **This is a substitution and is flagged.** A native OEKOBIT icon set would be needed for a production rebuild.
-
-## Substitutions / open questions
-
-- **Mulish:** loaded from Google Fonts. The Figma references the same family, so this should match exactly. (Flagging in case a self-hosted ttf is preferred.)
-- **Lucide icons** for any non-OEKOBIT-original glyph (search, hamburger, mail, etc.). The original site likely has its own; we have no codebase to confirm.
-- The Figma covers *navigation, headlines, infoboxes and one section template* but does **not** cover footer, forms, blog list, modal dialogs, table layouts, or mobile breakpoints. Anything in those areas in the UI kit is an extrapolation.
-
-## Index
-
-- `colors_and_type.css` — design tokens
-- `assets/` — logo, photography, group map
-- `preview/` — design-system tab cards (one per token group)
-- `ui_kits/website/` — full website recreation (`index.html` + JSX components)
-- `SKILL.md` — Agent SKILL packaging
+- Authenticated operator and expert accounts with role-based access control.
+- Backend APIs for plants, sensor streams, anomaly events, messages, attachments, and reports.
+- A durable database for cases, audit history, read state, decisions, and confirmed measures.
+- A telemetry ingestion pipeline with validation, unit normalization, and data-quality scoring.
+- Model-serving infrastructure for anomaly detection, model versioning, and explainability.
+- Human-in-the-loop review records for expert decisions and model feedback.
+- Secure file storage, virus scanning, and retention policies for attachments.
+- Observability, error monitoring, backup strategy, and incident response processes.
