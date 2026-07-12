@@ -5,8 +5,7 @@ import {
   Database,
   Download,
   FileText,
-  Printer,
-  Settings2
+  Printer
 } from "lucide-react";
 import {
   Bar,

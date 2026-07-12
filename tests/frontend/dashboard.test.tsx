@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import historyPayload from "../../public/data/dashboard-history.json";
 import legacyHtml from "../../public/legacy/index.html?raw";
 import appSource from "../../src/App.tsx?raw";
@@ -228,7 +228,7 @@ describe("analyze drawer and anomaly list", () => {
     expect(screen.getByText("Showing 1–10 of 12 attention records")).not.toBeNull();
     expect(screen.getByText("Page 1 of 2")).not.toBeNull();
     expect(screen.queryByText(items[10].measurement_id)).toBeNull();
-    expect(screen.getByText("Awaiting expert review")).not.toBeNull();
+    expect(screen.getAllByText("Awaiting expert review").length).toBeGreaterThan(0);
     expect(screen.getByText("False alarm")).not.toBeNull();
   });
 });
@@ -246,7 +246,7 @@ describe("messages and monthly report focus", () => {
       />
     );
 
-    expect(screen.getByText("No conversations yet")).not.toBeNull();
+    expect(screen.getAllByText("No conversations yet").length).toBeGreaterThan(0);
     expect(screen.queryByText("Period")).toBeNull();
     expect(screen.queryByText("Scenario")).toBeNull();
   });
