@@ -30,7 +30,9 @@ from .smartcontrol_pipeline import (
 API_DIR = Path(__file__).resolve().parent
 MODEL_DIR = API_DIR / "models"
 ROOT_DIR = API_DIR.parent
-HISTORY_PATH = ROOT_DIR / "public" / "data" / "dashboard-history.json"
+API_HISTORY_PATH = API_DIR / "data" / "dashboard-history.json"
+PUBLIC_HISTORY_PATH = ROOT_DIR / "public" / "data" / "dashboard-history.json"
+HISTORY_PATHS = (API_HISTORY_PATH, PUBLIC_HISTORY_PATH)
 
 MODEL_SCOPE = "Plant_01 simulated proof of concept"
 MODEL_LIMITATIONS = [
@@ -175,10 +177,12 @@ def get_assets() -> tuple[Any, Any]:
 
 @lru_cache(maxsize=1)
 def get_history_payload() -> dict[str, Any]:
-    if not HISTORY_PATH.exists():
-        raise RuntimeError(f"Missing history JSON: {HISTORY_PATH}")
+    history_path = next((path for path in HISTORY_PATHS if path.exists()), None)
+    if history_path is None:
+        expected_paths = ", ".join(str(path) for path in HISTORY_PATHS)
+        raise RuntimeError(f"Missing history JSON in: {expected_paths}")
 
-    with HISTORY_PATH.open("r", encoding="utf-8") as file:
+    with history_path.open("r", encoding="utf-8") as file:
         payload = json.load(file)
 
     records = payload.get("records")
