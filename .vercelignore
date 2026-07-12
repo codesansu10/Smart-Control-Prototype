@@ -11,5 +11,4 @@ work
 .vercel_python_packages
 tests
 source-data
-public/legacy
 archive
