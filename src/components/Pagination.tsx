@@ -11,7 +11,7 @@ export function Pagination(props: {
 
   return (
     <div className="pagination-bar" aria-label="Pagination controls">
-      <div className="pagination-meta">Showing {start}–{end} of {props.total} attention records</div>
+      <div className="pagination-meta">Showing {start}-{end} of {props.total} attention records</div>
       <label className="field-inline">
         Rows
         <select value={String(props.pageSize)} onChange={(event) => props.onPageSizeChange(Number(event.target.value))}>

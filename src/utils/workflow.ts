@@ -84,10 +84,10 @@ export function createAnomalyThread(args: {
   caseStatus: WorkflowCase["status"];
   note: string;
 }): MessageThread {
-  const first = createTextMessage({ sender: "julia", body: args.note || "Please review this anomaly case.", kind: "analysis-card" });
+  const first = createTextMessage({ sender: "julia", body: args.note || "Please review this error case.", kind: "analysis-card" });
   return {
     id: id("thread"),
-    subject: `Anomaly review ${args.measurementId}`,
+    subject: `Error review ${args.measurementId}`,
     type: "anomaly",
     measurementId: args.measurementId,
     messages: [first],

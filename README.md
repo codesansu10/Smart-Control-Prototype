@@ -80,7 +80,7 @@ Committed history facts:
 - 6 AI anomalies
 - 30 rule-based triggers
 - 4 critical rule rows
-- Latest measurement: `M0600`
+- Current measurement record: `M0600`
 
 The workbook contains historical demonstration data, not a live telemetry stream.
 
@@ -92,16 +92,16 @@ The dataset does not contain current July 2026 data and has no time-of-day colum
 
 The dashboard includes verified scenarios:
 
-- Latest measurement: `M0600`, Normal.
+- Current measurement record: `M0600`, Normal.
 - AI anomaly example: `M0123`, rule status Normal and Isolation Forest anomaly.
-- Critical rule example: `M0128`, Critical rule status and normal AI flag.
+- Critical rule record: `M0128`, Critical rule status and normal AI flag.
 - Custom measurement: accessible 19-field analysis drawer.
 
 Scenario selections submit the raw input values to `/api/analyze` when the live API is available. Static history is used only as a visible fallback.
 
 ## Report Export
 
-The dashboard can generate a self-contained HTML report and print/save it as PDF. Reports include the selected scenario, reporting period, current API response, all 19 inputs, engineered features, rule outputs, anomaly score and threshold, diagnostics, period KPIs, recent history, complete API-response appendix, and model limitations.
+The dashboard can generate a self-contained HTML report and print/save it as PDF. Reports include the selected scenario, reporting period, current measurement context, all 19 inputs, engineered features, rule outputs, anomaly score and threshold, diagnostics, period KPIs, recent history, workflow decision, and model limitations. Raw API JSON appendices are intentionally omitted from the report output.
 
 ## API Endpoints
 

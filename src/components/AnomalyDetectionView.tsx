@@ -1,6 +1,6 @@
 import { Send, UserCheck } from "lucide-react";
 import { Fragment, useEffect, useMemo, useState } from "react";
-import type { AnalysisResult, DashboardMode, HistoryRecord, PeriodKey, WorkflowCase } from "../types/smartcontrol";
+import type { AnalysisResult, DashboardMode, HistoryRecord, PeriodKey, UserRole, WorkflowCase } from "../types/smartcontrol";
 import { numberFormat } from "../utils/format";
 import { ruleBreakdown } from "../utils/history";
 import { displayTriggerSource, getUnifiedStatus } from "../utils/status";
@@ -27,6 +27,7 @@ function reviewState(record: HistoryRecord, caseItem: WorkflowCase | undefined):
 }
 
 export function AnomalyDetectionView(props: {
+  role: UserRole;
   mode: DashboardMode;
   records: HistoryRecord[];
   selectedPeriod: PeriodKey;
@@ -80,6 +81,8 @@ export function AnomalyDetectionView(props: {
   }, [filtered, pageSize, safePage]);
 
   const breakdown = ruleBreakdown(props.currentAnalysis);
+  const selectedCase = props.selectedMeasurementId ? props.anomalyCases[props.selectedMeasurementId] : undefined;
+  const showExpertDetails = props.mode === "Advanced" || props.role === "expert";
 
   return (
     <div className="workflow-grid">
@@ -88,13 +91,13 @@ export function AnomalyDetectionView(props: {
       <section className="panel">
         <div className="panel-header panel-header-wrap">
           <div>
-            <h2>Attention list</h2>
-            <p className="muted">Only records requiring attention are shown by default.</p>
+            <h2>Error Detection</h2>
+            <p className="muted">Needs attention is shown by default so normal technical history does not dominate the workflow.</p>
           </div>
           <PeriodSelector value={props.selectedPeriod} onChange={props.onPeriodChange} compact />
         </div>
 
-        <div className="segmented segmented-compact" role="group" aria-label="Anomaly filters">
+        <div className="segmented segmented-compact" role="group" aria-label="Error Detection filters">
           {[
             ["needs-attention", "Needs attention"],
             ["ai-anomalies", "AI anomalies"],
@@ -141,24 +144,15 @@ export function AnomalyDetectionView(props: {
                           <td>{rowReviewState}</td>
                           <td>
                             <div className="table-actions">
-                              <button type="button" className="table-link" onClick={() => props.onSelectMeasurement(record.measurement_id)}>View</button>
-                              {props.mode === "Advanced" && (
-                                <button type="button" className="table-link" onClick={() => setExpandedMeasurementId(expanded ? null : record.measurement_id)}>{expanded ? "Hide" : "Details"}</button>
-                              )}
+                              <button type="button" className="table-link" onClick={() => props.onSelectMeasurement(record.measurement_id)}>Select</button>
+                              <button type="button" className="table-link" onClick={() => setExpandedMeasurementId(expanded ? null : record.measurement_id)}>{expanded ? "Hide" : "Details"}</button>
                             </div>
                           </td>
                         </tr>
-                        {props.mode === "Advanced" && expanded && (
+                        {expanded && (
                           <tr>
                             <td colSpan={7}>
-                              <div className="advanced-row-details">
-                                <div><strong>Rule status:</strong> {record.overall_rule_status}</div>
-                                <div><strong>AI status:</strong> {record.anomaly_flag}</div>
-                                <div><strong>Raw anomaly score:</strong> {numberFormat(record.anomaly_score, 5)}</div>
-                                <div><strong>Trigger source:</strong> {displayTriggerSource(record.trigger_source)}</div>
-                                <div><strong>All six alerts:</strong> pH {record.ph_alert}, Temp {record.temperature_alert}, Oxygen {record.oxygen_alert}, Methane {record.methane_alert}, H2S {record.h2s_alert}, Maintenance {record.maintenance_alert}</div>
-                                <div><strong>Engineered features:</strong> Yield {numberFormat(record.biogas_yield_m3_per_ton, 2)} | CH4/CO2 {numberFormat(record.methane_to_co2_ratio, 3)}</div>
-                              </div>
+                              <RecordDetails record={record} expert={showExpertDetails} />
                             </td>
                           </tr>
                         )}
@@ -187,8 +181,17 @@ export function AnomalyDetectionView(props: {
           <div className="diagnostic-row"><strong>AI anomaly status</strong><span>{props.currentAnalysis.anomaly_flag}</span></div>
           <div className="diagnostic-row"><strong>Trigger source</strong><span>{displayTriggerSource(props.currentAnalysis.trigger_source)}</span></div>
           <div className="diagnostic-row"><strong>Possible issue category</strong><span>{props.currentAnalysis.possible_issue_category ?? "None"}</span></div>
+          <div className="diagnostic-row"><strong>Short explanation</strong><span>{props.currentAnalysis.short_explanation}</span></div>
           <div className="diagnostic-row"><strong>Isolation Forest score</strong><span>{numberFormat(props.currentAnalysis.anomaly_score, 5)}</span></div>
           <div className="diagnostic-row"><strong>Recommended action</strong><span>{props.currentAnalysis.recommended_action}</span></div>
+          <div className="diagnostic-row"><strong>Case status</strong><span>{selectedCase?.status ?? (props.currentAnalysis.expert_review_required === "Yes" ? "Awaiting expert review" : "Not submitted")}</span></div>
+          {props.role === "expert" && (
+            <>
+              <div className="diagnostic-row"><strong>Julia note</strong><span>{selectedCase?.note || "No operator note yet"}</span></div>
+              <div className="diagnostic-row"><strong>Existing expert reply</strong><span>{selectedCase?.expertReply || "No expert reply yet"}</span></div>
+              <div className="diagnostic-row"><strong>Operator measures</strong><span>{selectedCase?.operatorMeasures || "No measures defined yet"}</span></div>
+            </>
+          )}
         </div>
 
         <div className="kpi-grid" style={{ marginTop: 12 }}>
@@ -200,16 +203,49 @@ export function AnomalyDetectionView(props: {
           ))}
         </div>
 
-        <div className="drawer-actions" style={{ marginTop: 12 }}>
-          <textarea aria-label="Operator note" placeholder="Add a note for expert review" value={note} onChange={(event) => setNote(event.target.value)} rows={3} className="message-input" />
-          <button className="primary-button" type="button" onClick={() => props.onSubmitForReview(note)}>
-            <UserCheck size={16} aria-hidden="true" /> Submit for expert review
-          </button>
-          <button className="secondary-button" type="button" onClick={props.onSendToMessages}>
-            <Send size={16} aria-hidden="true" /> Send current analysis to Messages
-          </button>
-        </div>
+        {props.role === "operator" && (
+          <div className="drawer-actions" style={{ marginTop: 12 }}>
+            <textarea aria-label="Operator note" placeholder="Add a note for expert review" value={note} onChange={(event) => setNote(event.target.value)} rows={3} className="message-input" />
+            <button className="primary-button" type="button" onClick={() => props.onSubmitForReview(note)}>
+              <UserCheck size={16} aria-hidden="true" /> Submit for expert review
+            </button>
+            <button className="secondary-button" type="button" onClick={props.onSendToMessages}>
+              <Send size={16} aria-hidden="true" /> Send current analysis to Messages
+            </button>
+          </div>
+        )}
       </section>
+    </div>
+  );
+}
+
+function RecordDetails(props: { record: HistoryRecord; expert: boolean }) {
+  const diagnostics = props.record.diagnostics;
+
+  return (
+    <div className="advanced-row-details">
+      <div><strong>Possible issue category:</strong> {props.record.possible_issue_category ?? "None"}</div>
+      <div><strong>Short explanation:</strong> {props.record.short_explanation}</div>
+      <div><strong>Recommended action:</strong> {props.record.recommended_action}</div>
+      <div><strong>Rule-based status:</strong> {props.record.overall_rule_status}</div>
+      <div><strong>AI anomaly status:</strong> {props.record.anomaly_flag}</div>
+      <div><strong>Trigger source:</strong> {displayTriggerSource(props.record.trigger_source)}</div>
+      <div><strong>Expert review required:</strong> {props.record.expert_review_required}</div>
+      {props.expert && (
+        <>
+          <div><strong>Raw anomaly score:</strong> {numberFormat(props.record.anomaly_score, 5)}</div>
+          <div><strong>All six alerts:</strong> pH {props.record.ph_alert}, Temperature {props.record.temperature_alert}, Oxygen {props.record.oxygen_alert}, Methane {props.record.methane_alert}, H2S {props.record.h2s_alert}, Maintenance {props.record.maintenance_alert}</div>
+          <div><strong>Engineered features:</strong> Yield {numberFormat(props.record.biogas_yield_m3_per_ton, 2)} m3/t, CH4/CO2 {numberFormat(props.record.methane_to_co2_ratio, 3)}</div>
+          {diagnostics && (
+            <>
+              <div><strong>Expected gas flow:</strong> {numberFormat(diagnostics.expected_gas_flow_m3_h, 2)} m3/h</div>
+              <div><strong>Actual gas flow:</strong> {numberFormat(diagnostics.actual_gas_flow_m3_h, 2)} m3/h</div>
+              <div><strong>Gas-flow residual:</strong> {numberFormat(diagnostics.gas_flow_residual_m3_h, 2)} m3/h</div>
+              <div><strong>Robust z threshold:</strong> {numberFormat(diagnostics.robust_z_threshold, 2)}</div>
+            </>
+          )}
+        </>
+      )}
     </div>
   );
 }

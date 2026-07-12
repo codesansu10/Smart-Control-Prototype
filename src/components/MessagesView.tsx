@@ -41,7 +41,7 @@ export function MessagesView(props: {
           <span>Compose new conversation</span>
           <div className="drawer-actions">
             <input value={newSubject} onChange={(event) => setNewSubject(event.target.value)} placeholder="Subject" />
-            <button className="secondary-button" type="button" onClick={() => { props.onCreateThread(newSubject || ""); setNewSubject(""); }}>Create</button>
+            <button className="secondary-button" type="button" disabled={!newSubject.trim()} onClick={() => { props.onCreateThread(newSubject); setNewSubject(""); }}>Create</button>
           </div>
         </label>
         <div className="conversation-list">
@@ -50,7 +50,7 @@ export function MessagesView(props: {
             return (
               <button key={thread.id} type="button" className={props.activeThreadId === thread.id ? "conversation-item active" : "conversation-item"} onClick={() => props.onSelectThread(thread.id)}>
                 <strong>{thread.subject || "(No subject)"}</strong>
-                <small>{thread.type} · {new Date(thread.lastActivityAt).toLocaleString()}</small>
+                <small>{thread.type} - {new Date(thread.lastActivityAt).toLocaleString()}</small>
                 {unread > 0 && <span className="badge fallback">{unread} unread</span>}
               </button>
             );
@@ -74,7 +74,7 @@ export function MessagesView(props: {
                 <article key={entry.id} className={entry.kind === "status" ? "message-card status" : "message-card"}>
                   <header>
                     <strong>{entry.senderLabel}</strong>
-                    <small>{entry.senderSubLabel} · {new Date(entry.timestamp).toLocaleString()}</small>
+                    <small>{entry.senderSubLabel} - {new Date(entry.timestamp).toLocaleString()}</small>
                   </header>
                   <p>{entry.body}</p>
                 </article>
@@ -82,7 +82,7 @@ export function MessagesView(props: {
             </div>
             <div className="drawer-actions">
               <textarea className="message-input" aria-label="Message input" rows={3} value={message} onChange={(event) => setMessage(event.target.value)} />
-              <button className="primary-button" type="button" onClick={() => { props.onSendMessage(activeThread.id, message); setMessage(""); }}>
+              <button className="primary-button" type="button" disabled={!message.trim()} onClick={() => { props.onSendMessage(activeThread.id, message); setMessage(""); }}>
                 <Send size={15} aria-hidden="true" /> Send
               </button>
             </div>

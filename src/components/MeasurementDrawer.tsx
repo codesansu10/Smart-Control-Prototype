@@ -10,7 +10,7 @@ export function MeasurementDrawer(props: {
   onClose: () => void;
   onSubmit: (measurement: PlantMeasurement) => Promise<void>;
   isAnalyzing: boolean;
-  loadScenario: (scenario: "latest" | "ai-anomaly" | "critical-rule") => Promise<void>;
+  loadScenario: (scenario: "ai-anomaly") => Promise<void>;
 }) {
   const [measurement, setMeasurement] = useState<PlantMeasurement>(props.initialMeasurement);
   const [errors, setErrors] = useState<string[]>([]);
@@ -40,7 +40,7 @@ export function MeasurementDrawer(props: {
     await props.onSubmit(measurement);
   }
 
-  async function useExample(scenario: "latest" | "ai-anomaly" | "critical-rule") {
+  async function useExample(scenario: "ai-anomaly") {
     await props.loadScenario(scenario);
     props.onClose();
   }
@@ -56,7 +56,7 @@ export function MeasurementDrawer(props: {
       <section className="drawer" role="dialog" aria-modal="true" aria-labelledby="measurement-drawer-title">
         <div className="drawer-header">
           <div>
-            <h2 id="measurement-drawer-title">Analyze measurement</h2>
+            <h2 id="measurement-drawer-title">Analyze Measurement</h2>
             <p className="muted">Use examples or submit a custom 19-field measurement to /api/analyze.</p>
           </div>
           <button className="icon-button" type="button" onClick={props.onClose} aria-label="Close analysis drawer">
@@ -73,9 +73,7 @@ export function MeasurementDrawer(props: {
         <section className="panel section-panel">
           <span className="sidebar-label">Load example</span>
           <div className="drawer-actions" style={{ marginTop: 10 }}>
-            <button className="secondary-button" type="button" onClick={() => void useExample("latest")}>Latest measurement</button>
             <button className="secondary-button" type="button" onClick={() => void useExample("ai-anomaly")}>AI-only anomaly example</button>
-            <button className="secondary-button" type="button" onClick={() => void useExample("critical-rule")}>Critical rule example</button>
           </div>
         </section>
 
@@ -113,7 +111,7 @@ export function MeasurementDrawer(props: {
           <div className="drawer-actions">
             <button className="primary-button" type="button" onClick={() => void submit()} disabled={props.isAnalyzing}>
               {props.isAnalyzing ? <Loader2 size={17} aria-hidden="true" /> : <Activity size={17} aria-hidden="true" />}
-              {props.isAnalyzing ? "Analyzing measurement" : "Analyze measurement"}
+              {props.isAnalyzing ? "Analyzing measurement" : "Analyze Measurement"}
             </button>
             <button className="secondary-button" type="button" onClick={props.onClose}>Cancel</button>
           </div>

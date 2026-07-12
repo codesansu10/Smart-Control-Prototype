@@ -14,8 +14,58 @@ function escapeHtml(value: unknown): string {
 
 function rowsFromObject(value: Record<string, unknown>): string {
   return Object.entries(value)
-    .map(([key, item]) => `<tr><th>${escapeHtml(key)}</th><td>${escapeHtml(item)}</td></tr>`)
+    .map(([key, item]) => `<tr><th>${escapeHtml(reportLabel(key))}</th><td>${escapeHtml(item)}</td></tr>`)
     .join("");
+}
+
+function reportLabel(key: string): string {
+  const labels: Record<string, string> = {
+    measurement_id: "Measurement ID",
+    measurement_date: "Measurement date",
+    plant_id: "Plant",
+    scenario_label: "Scenario",
+    submitted_at: "Submitted at",
+    possible_issue_category: "Possible issue category",
+    short_explanation: "Explanation",
+    recommended_action: "Recommended action",
+    expert_review_required: "Expert review required",
+    trigger_source: "Trigger source",
+    anomaly_flag: "AI anomaly status",
+    case_status: "Case status",
+    expert_decision: "Expert decision",
+    expert_reply: "Expert reply",
+    operator_measures: "Operator measures",
+    average_methane_percent: "Average methane",
+    average_biogas_yield_m3_per_ton: "Average biogas yield",
+    average_gas_flow_m3_h: "Average gas flow",
+    ai_anomaly_rate: "AI anomaly rate",
+    warning_critical_rule_rate: "Warning or critical rule rate",
+    expert_review_count: "Expert-review count",
+    maintenance_overdue_count: "Maintenance overdue count",
+    biogas_yield_m3_per_ton: "Biogas yield",
+    methane_to_co2_ratio: "Methane to CO2 ratio",
+    raw_anomaly_score: "Raw anomaly score",
+    distance_above_threshold: "Distance above threshold",
+    expected_gas_flow_m3_h: "Expected gas flow",
+    actual_gas_flow_m3_h: "Actual gas flow",
+    gas_flow_residual_m3_h: "Gas-flow residual",
+    robust_z_threshold: "Robust z-score threshold"
+  };
+
+  if (labels[key]) {
+    return labels[key];
+  }
+
+  return key
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function scenarioLabel(scenario: ScenarioKey): string {
+  if (scenario === "latest") return "Current measurement";
+  if (scenario === "critical-rule") return "Critical rule record";
+  if (scenario === "ai-anomaly") return "AI anomaly example";
+  return "Custom measurement";
 }
 
 export function generateHtmlReport(args: {
@@ -45,7 +95,7 @@ export function generateHtmlReport(args: {
   const inputRows = measurementFields
     .map((field) => {
       const value = analysis[field.key];
-      return `<tr><th>${escapeHtml(field.key)}</th><td>${escapeHtml(value)}</td><td>${escapeHtml(field.unit || "Context")}</td></tr>`;
+      return `<tr><th>${escapeHtml(field.label)}</th><td>${escapeHtml(value)}</td><td>${escapeHtml(field.unit || "Context")}</td></tr>`;
     })
     .join("");
 
@@ -63,7 +113,7 @@ export function generateHtmlReport(args: {
   const robustRows = diagnostics
     ? Object.entries(diagnostics.robust_metrics)
         .map(([name, metric]) => (
-          `<tr><th>${escapeHtml(name)}</th><td>${numberFormat(metric.value, 3)}</td><td>${numberFormat(metric.median, 3)}</td><td>${numberFormat(metric.mad, 3)}</td><td>${numberFormat(metric.robust_z_score, 3)}</td><td>${escapeHtml(metric.deviation)}</td></tr>`
+          `<tr><th>${escapeHtml(reportLabel(name))}</th><td>${numberFormat(metric.value, 3)}</td><td>${numberFormat(metric.median, 3)}</td><td>${numberFormat(metric.mad, 3)}</td><td>${numberFormat(metric.robust_z_score, 3)}</td><td>${escapeHtml(metric.deviation)}</td></tr>`
         ))
         .join("")
     : "";
@@ -102,7 +152,6 @@ export function generateHtmlReport(args: {
     .status{display:inline-block;border-radius:99px;padding:4px 10px;font-weight:700}
     .Normal{background:#e4f7ed;color:#0f6b3b}.Warning{background:#fff4d7;color:#8a5a00}.Critical{background:#fde8e5;color:#9d1f16}
     .callout{background:#fff9e9;border-color:#eedaa8;color:#513a04}
-    pre{white-space:pre-wrap;background:#f1f5f6;padding:12px;border-radius:6px;overflow:auto}
     @media print{body{background:#fff}main{max-width:none;padding:0}section{break-inside:avoid}}
   </style>
 </head>
@@ -111,7 +160,7 @@ export function generateHtmlReport(args: {
     <header>
       <img src="./assets/logo-oekobit.png" alt="OEKOBIT">
       <h1>SMARTCONTROL 2.0 Report</h1>
-      <p>Plant ID: Plant_01 | Scenario: ${escapeHtml(scenario)} | Period: ${escapeHtml(periodLabel)} | Generated: ${escapeHtml(generatedAt)} | Data source: ${escapeHtml(dataSource)}</p>
+      <p>Plant ID: Plant_01 | Scenario: ${escapeHtml(scenarioLabel(scenario))} | Period: ${escapeHtml(periodLabel)} | Generated: ${escapeHtml(generatedAt)} | Data source: ${escapeHtml(dataSource)}</p>
     </header>
     <section>
       <h2>Executive Summary</h2>
@@ -200,10 +249,6 @@ export function generateHtmlReport(args: {
     <section>
       <h2>Model Limitations</h2>
       <ul>${limitations.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
-    </section>
-    <section>
-      <h2>Complete API Response Appendix</h2>
-      <pre>${escapeHtml(JSON.stringify(analysis, null, 2))}</pre>
     </section>
   </main>
 </body>

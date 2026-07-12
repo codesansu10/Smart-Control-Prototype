@@ -25,7 +25,6 @@ import {
   YAxis
 } from "recharts";
 import type {
-  AnalysisContext,
   AnalysisResult,
   ApiMetadata,
   ChartMetric,
@@ -57,7 +56,6 @@ const ruleRows = [
 export function DashboardView(props: {
   mode: DashboardMode;
   analysis: AnalysisResult;
-  context: AnalysisContext | null;
   metadata: ApiMetadata;
   dataSource: DataSourceState;
   dailyData: DailyAggregate[];
@@ -77,10 +75,18 @@ export function DashboardView(props: {
   return (
     <>
       <StatusStrip analysis={props.analysis} dataSource={props.dataSource} unifiedStatus={unifiedStatus} caseItem={props.caseItem} />
+      <TrendPanel
+        dailyData={props.dailyData}
+        selectedMetric={props.selectedMetric}
+        setSelectedMetric={props.setSelectedMetric}
+        metricInfo={selectedMetricInfo}
+        selectedPeriod={props.selectedPeriod}
+        onPeriodChange={props.onPeriodChange}
+      />
       <section className="panel" style={{ marginBottom: 14 }}>
         <div className="panel-header">
           <div>
-            <h2>Operational guidance</h2>
+            <h2>Operational Guidance</h2>
             <p className="muted">What requires attention and what to do next.</p>
           </div>
           <FileText size={20} aria-hidden="true" />
@@ -91,20 +97,12 @@ export function DashboardView(props: {
           <DiagnosticLine label="Recommended action" value={props.analysis.recommended_action} />
         </div>
       </section>
-      <DataContextPanel context={props.context} metadata={props.metadata} />
       {isAiOnlyAnomaly(props.analysis) && <AiOnlyAnomalyBanner analysis={props.analysis} metadata={props.metadata} />}
       {props.mode === "Basic" ? (
         <BasicView
           analysis={props.analysis}
           dailyData={props.dailyData}
-          periodHistory={props.periodHistory}
-          kpis={props.kpis}
           metadata={props.metadata}
-          selectedMetric={props.selectedMetric}
-          setSelectedMetric={props.setSelectedMetric}
-          metricInfo={selectedMetricInfo}
-          selectedPeriod={props.selectedPeriod}
-          onPeriodChange={props.onPeriodChange}
         />
       ) : (
         <AdvancedView
@@ -114,12 +112,10 @@ export function DashboardView(props: {
           selectedMetric={props.selectedMetric}
           setSelectedMetric={props.setSelectedMetric}
           metricInfo={selectedMetricInfo}
-          selectedPeriod={props.selectedPeriod}
-          onPeriodChange={props.onPeriodChange}
-          dailyData={props.dailyData}
-          kpis={props.kpis}
         />
       )}
+
+      <KpiSummary kpis={props.kpis} periodHistory={props.periodHistory} mode={props.mode} />
 
       <section className="panel" style={{ marginTop: 14 }}>
         <div className="panel-header">
@@ -158,38 +154,6 @@ export function DataSourceIndicator(props: {
       </span>
       {!props.isAnalyzeAvailable && <span className="badge error">Live analysis disabled</span>}
     </div>
-  );
-}
-
-function DataContextPanel(props: {
-  context: AnalysisContext | null;
-  metadata: ApiMetadata;
-}) {
-  const context = props.context ?? {
-    measurementId: "Unknown",
-    measurementDate: "Unknown",
-    plantId: "Plant_01",
-    scenarioLabel: "Current measurement",
-    sourceLabel: "Analysis context is being prepared",
-    submittedAt: new Date().toISOString()
-  };
-
-  return (
-    <section className="context-panel" aria-label="Current data context">
-      <div>
-        <span className="sidebar-label">Current data context</span>
-        <h2>{context.scenarioLabel}</h2>
-        <p className="muted">{context.sourceLabel}</p>
-      </div>
-      <div className="context-items">
-        <ContextItem label="Measurement ID" value={context.measurementId} />
-        <ContextItem label="Measurement date" value={context.measurementDate} />
-        <ContextItem label="Plant" value={context.plantId} />
-        <ContextItem label="Model scope" value={props.metadata.model_scope} />
-        <ContextItem label="History rows" value={String(props.metadata.historical_row_count)} />
-        <ContextItem label="Submitted" value={new Date(context.submittedAt).toLocaleString()} />
-      </div>
-    </section>
   );
 }
 
@@ -269,14 +233,7 @@ function StatusSmall(props: { label: string; value: string; severity: Severity }
 function BasicView(props: {
   analysis: AnalysisResult;
   dailyData: DailyAggregate[];
-  periodHistory: HistoryRecord[];
-  kpis: PeriodKpis;
   metadata: ApiMetadata;
-  selectedMetric: ChartMetric;
-  setSelectedMetric: (metric: ChartMetric) => void;
-  metricInfo: { key: ChartMetric; label: string; unit: string };
-  selectedPeriod: PeriodKey;
-  onPeriodChange: (period: PeriodKey) => void;
 }) {
   const metricCards: Array<{
     label: string;
@@ -344,53 +301,19 @@ function BasicView(props: {
   ];
 
   return (
-    <div className="dashboard-grid">
-      <div className="advanced-section">
-        <section className="panel">
-          <div className="panel-header">
-            <div>
-              <h2>Operational cards</h2>
-              <p className="muted">Current submitted measurement with compact daily mean trends.</p>
-            </div>
-          </div>
-          <div className="metric-grid">
-            {metricCards.map((card) => (
-              <MetricCard key={card.label} {...card} dailyData={props.dailyData} />
-            ))}
-          </div>
-        </section>
-
-        <TrendPanel
-          dailyData={props.dailyData}
-          selectedMetric={props.selectedMetric}
-          setSelectedMetric={props.setSelectedMetric}
-          metricInfo={props.metricInfo}
-          selectedPeriod={props.selectedPeriod}
-          onPeriodChange={props.onPeriodChange}
-        />
+    <section className="panel">
+      <div className="panel-header">
+        <div>
+          <h2>Operational Cards</h2>
+          <p className="muted">Six simple process checks with compact daily mean trends.</p>
+        </div>
       </div>
-
-      <div className="advanced-section">
-        <section className="panel">
-          <div className="panel-header">
-            <div>
-              <h2>Historical KPI summary</h2>
-              <p className="muted">Derived only from the selected history period.</p>
-            </div>
-          </div>
-          <div className="kpi-grid">
-            <Kpi label="Average methane" value={`${numberFormat(props.kpis.averageMethane, 1)}%`} />
-            <Kpi label="Average biogas yield" value={`${numberFormat(props.kpis.averageBiogasYield, 2)} m3/t`} />
-            <Kpi label="Average gas flow" value={`${numberFormat(props.kpis.averageGasFlow, 1)} m3/h`} />
-            <Kpi label="AI anomaly rate" value={percent(props.kpis.aiAnomalyRate)} />
-            <Kpi label="Rule escalation rate" value={percent(props.kpis.ruleEscalationRate)} />
-            <Kpi label="Expert-review count" value={String(props.kpis.expertReviewCount)} />
-            <Kpi label="Maintenance overdue" value={String(props.kpis.maintenanceOverdueCount)} />
-            <Kpi label="Observations in period" value={String(props.periodHistory.length)} />
-          </div>
-        </section>
+      <div className="metric-grid">
+        {metricCards.map((card) => (
+          <MetricCard key={card.label} {...card} dailyData={props.dailyData} />
+        ))}
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -470,7 +393,7 @@ function TrendPanel(props: {
     <section className="panel">
       <div className="panel-header panel-header-wrap">
         <div>
-          <h2>Historical trends</h2>
+          <h2>Historical Trends</h2>
           <p className="muted">Daily mean with min/max range from selected period.</p>
         </div>
         <div className="trend-controls">
@@ -507,10 +430,6 @@ function AdvancedView(props: {
   selectedMetric: ChartMetric;
   setSelectedMetric: (metric: ChartMetric) => void;
   metricInfo: { key: ChartMetric; label: string; unit: string };
-  selectedPeriod: PeriodKey;
-  onPeriodChange: (period: PeriodKey) => void;
-  dailyData: DailyAggregate[];
-  kpis: PeriodKpis;
 }) {
   const diagnostics = props.analysis.diagnostics;
   const currentRuleBreakdown = ruleBreakdown(props.analysis);
@@ -532,30 +451,6 @@ function AdvancedView(props: {
 
   return (
     <div className="advanced-section">
-      <TrendPanel
-        dailyData={props.dailyData}
-        selectedMetric={props.selectedMetric}
-        setSelectedMetric={props.setSelectedMetric}
-        metricInfo={props.metricInfo}
-        selectedPeriod={props.selectedPeriod}
-        onPeriodChange={props.onPeriodChange}
-      />
-
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <h2>Advanced KPI summary</h2>
-            <p className="muted">Technical summary for selected period.</p>
-          </div>
-        </div>
-        <div className="kpi-grid">
-          <Kpi label="Average methane" value={`${numberFormat(props.kpis.averageMethane, 1)}%`} />
-          <Kpi label="Average biogas yield" value={`${numberFormat(props.kpis.averageBiogasYield, 2)} m3/t`} />
-          <Kpi label="Average gas flow" value={`${numberFormat(props.kpis.averageGasFlow, 1)} m3/h`} />
-          <Kpi label="AI anomaly rate" value={percent(props.kpis.aiAnomalyRate)} />
-        </div>
-      </section>
-
       <div className="advanced-grid">
         <section className="panel">
           <div className="panel-header">
@@ -625,7 +520,6 @@ function AdvancedView(props: {
               <p className="muted">Measurement-level chart for technical inspection.</p>
             </div>
             <div className="trend-controls">
-              <PeriodSelector value={props.selectedPeriod} onChange={props.onPeriodChange} compact />
               <select aria-label="Raw chart metric" value={props.selectedMetric} onChange={(event) => props.setSelectedMetric(event.target.value as ChartMetric)}>
                 {chartMetrics.map((metric) => (
                   <option key={metric.key} value={metric.key}>{metric.label}</option>
@@ -708,6 +602,33 @@ function DiagnosticLine(props: { label: string; value: string }) {
       <strong>{props.label}</strong>
       <span>{props.value}</span>
     </div>
+  );
+}
+
+function KpiSummary(props: {
+  kpis: PeriodKpis;
+  periodHistory: HistoryRecord[];
+  mode: DashboardMode;
+}) {
+  return (
+    <section className="panel" style={{ marginTop: 14 }}>
+      <div className="panel-header">
+        <div>
+          <h2>{props.mode === "Advanced" ? "Advanced KPI Summary" : "Compact KPI Summary"}</h2>
+          <p className="muted">Derived only from the selected history period.</p>
+        </div>
+      </div>
+      <div className="kpi-grid">
+        <Kpi label="Average methane" value={`${numberFormat(props.kpis.averageMethane, 1)}%`} />
+        <Kpi label="Average biogas yield" value={`${numberFormat(props.kpis.averageBiogasYield, 2)} m3/t`} />
+        <Kpi label="Average gas flow" value={`${numberFormat(props.kpis.averageGasFlow, 1)} m3/h`} />
+        <Kpi label="AI anomaly rate" value={percent(props.kpis.aiAnomalyRate)} />
+        <Kpi label="Rule escalation rate" value={percent(props.kpis.ruleEscalationRate)} />
+        <Kpi label="Expert-review count" value={String(props.kpis.expertReviewCount)} />
+        <Kpi label="Maintenance overdue" value={String(props.kpis.maintenanceOverdueCount)} />
+        <Kpi label="Observations in period" value={String(props.periodHistory.length)} />
+      </div>
+    </section>
   );
 }
 

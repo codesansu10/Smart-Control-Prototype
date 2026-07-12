@@ -5,14 +5,14 @@ import { identities } from "../utils/workflow";
 
 const operatorNav: Array<{ key: WorkflowModule; label: string }> = [
   { key: "dashboard", label: "Dashboard" },
-  { key: "anomaly-detection", label: "Anomaly Detection" },
+  { key: "anomaly-detection", label: "Error Detection" },
   { key: "monthly-report", label: "Monthly Report" },
   { key: "messages", label: "Messages" }
 ];
 
 const expertNav: Array<{ key: WorkflowModule; label: string }> = [
   { key: "review-queue", label: "Review Queue" },
-  { key: "anomaly-detection", label: "Anomaly Detection" },
+  { key: "anomaly-detection", label: "Error Detection" },
   { key: "monthly-report-review", label: "Monthly Report Review" },
   { key: "messages", label: "Messages" }
 ];
@@ -24,7 +24,6 @@ export function Sidebar(props: {
   onModeChange: (mode: DashboardMode) => void;
   onModuleChange: (module: WorkflowModule) => void;
   onRoleChange: (role: UserRole) => void;
-  onResetData: () => void;
   onSignOut: () => void;
 }) {
   const nav = props.role === "expert" ? expertNav : operatorNav;
@@ -53,7 +52,6 @@ export function Sidebar(props: {
           mode={props.mode}
           onRoleChange={props.onRoleChange}
           onModeChange={props.onModeChange}
-          onResetData={props.onResetData}
           onSignOut={props.onSignOut}
         />
       </div>
@@ -84,7 +82,6 @@ function UserSwitcher(props: {
   mode: DashboardMode;
   onRoleChange: (role: UserRole) => void;
   onModeChange: (mode: DashboardMode) => void;
-  onResetData: () => void;
   onSignOut: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -145,19 +142,20 @@ function UserSwitcher(props: {
             {props.role === "expert" && <Check size={16} aria-hidden="true" />}
           </button>
 
-          <strong className="sidebar-label">Detail level</strong>
-          <button type="button" className={props.mode === "Basic" ? "user-option active" : "user-option"} onClick={() => { props.onModeChange("Basic"); setOpen(false); }}>
-            <span>Basic</span>
-            {props.mode === "Basic" && <Check size={16} aria-hidden="true" />}
-          </button>
-          <button type="button" className={props.mode === "Advanced" ? "user-option active" : "user-option"} onClick={() => { props.onModeChange("Advanced"); setOpen(false); }}>
-            <span>Advanced</span>
-            {props.mode === "Advanced" && <Check size={16} aria-hidden="true" />}
-          </button>
+          {props.role === "operator" && (
+            <>
+              <strong className="sidebar-label">Detail level</strong>
+              <button type="button" className={props.mode === "Basic" ? "user-option active" : "user-option"} onClick={() => { props.onModeChange("Basic"); setOpen(false); }}>
+                <span>Basic</span>
+                {props.mode === "Basic" && <Check size={16} aria-hidden="true" />}
+              </button>
+              <button type="button" className={props.mode === "Advanced" ? "user-option active" : "user-option"} onClick={() => { props.onModeChange("Advanced"); setOpen(false); }}>
+                <span>Advanced</span>
+                {props.mode === "Advanced" && <Check size={16} aria-hidden="true" />}
+              </button>
+            </>
+          )}
 
-          <button type="button" className="user-option" onClick={() => { props.onResetData(); setOpen(false); }}>
-            <span>Reset prototype data</span>
-          </button>
           <button type="button" className="user-option" onClick={() => { props.onSignOut(); setOpen(false); }}>
             <XCircle size={15} aria-hidden="true" /> Sign out
           </button>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { RefreshCw, SlidersHorizontal, Loader2 } from "lucide-react";
+import { SlidersHorizontal, Loader2 } from "lucide-react";
 import type {
   AnalysisContext,
   AnalysisResult,
@@ -11,7 +11,6 @@ import type {
   WorkflowCase
 } from "./types/smartcontrol";
 import { analyzeMeasurement, getHealth, getHistory, getMetadata, getStaticHistory } from "./services/api";
-import { getDefaultPersistedState } from "./services/storage";
 import { useWorkflowState } from "./hooks/useWorkflowState";
 import { fallbackMetadata } from "./utils/defaults";
 import { aggregateDaily, calculatePeriodKpis, getScenarioRecord, selectPeriod } from "./utils/history";
@@ -24,6 +23,7 @@ import { MonthlyReportView } from "./components/MonthlyReportView";
 import { MessagesView } from "./components/MessagesView";
 import { ReviewQueueView } from "./components/ReviewQueueView";
 import { MeasurementDrawer } from "./components/MeasurementDrawer";
+import { PlantColleague } from "./components/PlantColleague";
 import {
   appendMessage,
   availableMonths,
@@ -39,9 +39,9 @@ import {
 } from "./utils/workflow";
 
 const scenarioLabels = {
-  latest: "Latest measurement",
+  latest: "Current measurement",
   "ai-anomaly": "AI anomaly example",
-  "critical-rule": "Critical rule example",
+  "critical-rule": "Critical rule record",
   custom: "Custom measurement"
 } as const;
 
@@ -76,7 +76,7 @@ function contextFromCustom(sourceLabel: string): AnalysisContext {
 }
 
 function App() {
-  const { state: workflow, patchState, switchRole, resetState } = useWorkflowState();
+  const { state: workflow, patchState, switchRole } = useWorkflowState();
   const [metadata, setMetadata] = useState<ApiMetadata>(fallbackMetadata);
   const [historyRecords, setHistoryRecords] = useState<HistoryRecord[]>([]);
   const [currentAnalysis, setCurrentAnalysis] = useState<AnalysisResult | null>(null);
@@ -102,12 +102,18 @@ function App() {
   const selectedMonth = workflow.selectedReportMonth ?? months.at(-1) ?? "";
   const selectedCase = workflow.selectedMeasurementId ? findCaseForMeasurement(workflow.anomalyCases, workflow.selectedMeasurementId) : null;
   const selectedReport = selectedMonth ? workflow.monthlyReports[selectedMonth] ?? null : null;
+  const effectiveMode = workflow.role === "expert" ? "Advanced" : workflow.mode;
 
   useEffect(() => {
     if (months.length && !workflow.selectedReportMonth) {
       patchState({ selectedReportMonth: months.at(-1) ?? null });
     }
   }, [months, patchState, workflow.selectedReportMonth]);
+
+  useEffect(() => {
+    setExpertReply(selectedCase?.expertReply ?? "");
+    setOperatorMeasures(selectedCase?.operatorMeasures ?? "");
+  }, [selectedCase?.expertReply, selectedCase?.operatorMeasures, workflow.selectedMeasurementId]);
 
   const reportHtml = useMemo(() => {
     if (!currentAnalysis) {
@@ -141,7 +147,7 @@ function App() {
       if (fallbackRecord) {
         setCurrentAnalysis(fallbackRecord);
         setDataSource("Static historical fallback");
-        setAnalysisContext(contextFromRecord(fallbackRecord, scenario, "Static workbook result — model not re-executed"));
+        setAnalysisContext(contextFromRecord(fallbackRecord, scenario, "Static workbook result - model not re-executed"));
       } else if (context) {
         setAnalysisContext(context);
       }
@@ -163,7 +169,7 @@ function App() {
       if (fallbackRecord) {
         setCurrentAnalysis(fallbackRecord);
         setDataSource("Static historical fallback");
-        setAnalysisContext(contextFromRecord(fallbackRecord, scenario, "Static workbook result — model not re-executed"));
+        setAnalysisContext(contextFromRecord(fallbackRecord, scenario, "Static workbook result - model not re-executed"));
       } else {
         setDataSource("API unavailable");
         setAnalysisContext(context ?? contextFromCustom("Custom measurement submitted to unavailable API"));
@@ -194,7 +200,7 @@ function App() {
     patchState({ selectedMeasurementId: record.measurement_id });
     const measurement = measurementFromHistory(record);
     setFormState(measurement);
-    await runAnalysis(measurement, scenario, record, contextFromRecord(record, scenario, "Historical workbook measurement submitted to live API"));
+    await runAnalysis(measurement, scenario, record, contextFromRecord(record, scenario, "Historical workbook record submitted to the live API"));
   }, [historyRecords, patchState, runAnalysis, workflow.lastCustomMeasurement]);
 
   useEffect(() => {
@@ -224,7 +230,7 @@ function App() {
           patchState({ selectedMeasurementId: record.measurement_id, selectedScenario: "latest" });
           const measurement = measurementFromHistory(record);
           setFormState(measurement);
-          await runAnalysis(measurement, "latest", record, contextFromRecord(record, "latest", "Historical workbook measurement submitted to live API"));
+          await runAnalysis(measurement, "latest", record, contextFromRecord(record, "latest", "Historical workbook record submitted to the live API"));
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : "API startup failed";
@@ -241,7 +247,7 @@ function App() {
             if (record) {
               patchState({ selectedMeasurementId: record.measurement_id, selectedScenario: "latest" });
               setCurrentAnalysis(record);
-              setAnalysisContext(contextFromRecord(record, "latest", "Static workbook result — model not re-executed"));
+              setAnalysisContext(contextFromRecord(record, "latest", "Static workbook result - model not re-executed"));
             }
           } catch (staticError) {
             setDataSource("API unavailable");
@@ -293,7 +299,7 @@ function App() {
     if (!record) return;
     patchState({ selectedMeasurementId: measurementId });
     const measurement = measurementFromHistory(record);
-    await runAnalysis(measurement, workflow.selectedScenario === "custom" ? "latest" : workflow.selectedScenario, record, contextFromRecord(record, "latest", "Historical workbook measurement submitted to live API"));
+    await runAnalysis(measurement, workflow.selectedScenario === "custom" ? "latest" : workflow.selectedScenario, record, contextFromRecord(record, "latest", "Historical workbook record submitted to the live API"));
   }
 
   function updateThreads(thread: MessageThread) {
@@ -310,7 +316,7 @@ function App() {
     if (!thread) {
       thread = createAnomalyThread({ measurementId, caseStatus: "Awaiting expert review", note });
     } else {
-      const entry = createTextMessage({ sender: "julia", body: note || "Please review this anomaly case.", kind: "analysis-card" });
+      const entry = createTextMessage({ sender: "julia", body: note || "Please review this error case.", kind: "analysis-card" });
       thread = appendMessage(thread, entry, "operator");
       thread = { ...thread, caseStatus: "Awaiting expert review" };
     }
@@ -333,7 +339,7 @@ function App() {
       }
     });
     setActiveThreadId(thread.id);
-    setAnnouncement(`Anomaly ${measurementId} submitted for expert review.`);
+    setAnnouncement(`Error case ${measurementId} submitted for expert review.`);
   }
 
   function sendAnalysisToMessages() {
@@ -348,7 +354,7 @@ function App() {
     const card = createTextMessage({
       sender: "julia",
       kind: "analysis-card",
-      body: `Analysis card ${measurementId}: model=${currentAnalysis.anomaly_flag}, rule=${currentAnalysis.overall_rule_status}, trigger=${currentAnalysis.trigger_source ?? "None"}.`
+      body: `Analysis card ${measurementId}: AI=${currentAnalysis.anomaly_flag}, rule=${currentAnalysis.overall_rule_status}, trigger=${currentAnalysis.trigger_source ?? "None"}.`
     });
     thread = appendMessage(thread, card, "operator");
     updateThreads(thread);
@@ -367,10 +373,15 @@ function App() {
   }
 
   function createGeneralThread(subject: string) {
+    const trimmedSubject = subject.trim();
+    if (!trimmedSubject) {
+      return;
+    }
+
     const initial = createTextMessage({ sender: workflow.role === "expert" ? "bernd" : "julia", body: "New conversation started." });
     const thread: MessageThread = {
       id: `thread-${Math.random().toString(36).slice(2, 10)}`,
-      subject: subject.trim(),
+      subject: trimmedSubject,
       type: "general",
       messages: [initial],
       unreadByOperator: workflow.role === "expert" ? 1 : 0,
@@ -479,14 +490,6 @@ function App() {
     upsertMonthlyReport({ status: "Awaiting expert review" });
   }
 
-  function resetPrototypeData() {
-    const confirmed = window.confirm("Reset prototype workflow data and preferences?");
-    if (!confirmed) return;
-    resetState();
-    patchState({ ...getDefaultPersistedState() });
-    setActiveThreadId(null);
-  }
-
   function handleSignOut() {
     window.alert("Sign out is demonstration-only in this PoC. Authentication is not connected.");
   }
@@ -501,7 +504,6 @@ function App() {
           onModeChange={(mode) => patchState({ mode })}
           onModuleChange={(activeModule) => patchState({ activeModule })}
           onRoleChange={switchRole}
-          onResetData={resetPrototypeData}
           onSignOut={handleSignOut}
         />
         <main className="main">
@@ -522,7 +524,6 @@ function App() {
         onModeChange={(mode) => patchState({ mode })}
         onModuleChange={(activeModule) => patchState({ activeModule })}
         onRoleChange={switchRole}
-        onResetData={resetPrototypeData}
         onSignOut={handleSignOut}
       />
 
@@ -538,12 +539,11 @@ function App() {
 
           <div className="top-actions">
             <DataSourceIndicator dataSource={dataSource} isApiConnected={isApiConnected} isAnalyzeAvailable={isAnalyzeAvailable} />
-            <button className="secondary-button" type="button" onClick={() => setDrawerOpen(true)}>
-              <SlidersHorizontal size={17} aria-hidden="true" /> Analyze measurement
-            </button>
-            <button className="icon-button" type="button" onClick={() => void loadScenario("latest")} aria-label="Reset to latest measurement">
-              <RefreshCw size={17} aria-hidden="true" />
-            </button>
+            {workflow.role === "operator" && (
+              <button className="secondary-button" type="button" onClick={() => setDrawerOpen(true)}>
+                <SlidersHorizontal size={17} aria-hidden="true" /> Analyze Measurement
+              </button>
+            )}
           </div>
         </div>
 
@@ -552,9 +552,8 @@ function App() {
 
         {workflow.activeModule === "dashboard" && (
           <DashboardView
-            mode={workflow.mode}
+            mode={effectiveMode}
             analysis={currentAnalysis}
-            context={analysisContext}
             metadata={metadata}
             dataSource={dataSource}
             dailyData={dailyData}
@@ -573,7 +572,8 @@ function App() {
         {workflow.activeModule === "anomaly-detection" && (
           <>
             <AnomalyDetectionView
-              mode={workflow.mode}
+              role={workflow.role}
+              mode={effectiveMode}
               records={periodHistory}
               selectedPeriod={workflow.selectedPeriod}
               onPeriodChange={(selectedPeriod) => patchState({ selectedPeriod })}
@@ -589,8 +589,17 @@ function App() {
                 <div className="panel-header">
                   <div>
                     <h2>Expert review controls</h2>
-                    <p className="muted">Confirm anomaly, mark false alarm, request more data, define operator measures, and close case.</p>
+                    <p className="muted">Decision controls for the selected measurement only.</p>
                   </div>
+                </div>
+                <div className="diagnostic-list" style={{ marginBottom: 12 }}>
+                  <div className="diagnostic-row"><strong>Measurement ID</strong><span>{workflow.selectedMeasurementId ?? "None selected"}</span></div>
+                  <div className="diagnostic-row"><strong>Measurement date</strong><span>{analysisContext?.measurementDate ?? "Unknown"}</span></div>
+                  <div className="diagnostic-row"><strong>Rule-based status</strong><span>{currentAnalysis.overall_rule_status}</span></div>
+                  <div className="diagnostic-row"><strong>AI anomaly status</strong><span>{currentAnalysis.anomaly_flag}</span></div>
+                  <div className="diagnostic-row"><strong>Julia note</strong><span>{selectedCase?.note || "No operator note yet"}</span></div>
+                  <div className="diagnostic-row"><strong>Current case status</strong><span>{selectedCase?.status ?? "Open"}</span></div>
+                  <div className="diagnostic-row"><strong>Existing expert decision</strong><span>{selectedCase?.expertDecision ?? "Pending"}</span></div>
                 </div>
                 <label className="field">
                   <span>Reply to Julia</span>
@@ -604,6 +613,7 @@ function App() {
                   <button className="secondary-button" type="button" onClick={() => updateCaseFromExpert("Anomaly confirmed", "Anomaly confirmed")}>Confirm anomaly</button>
                   <button className="secondary-button" type="button" onClick={() => updateCaseFromExpert("False alarm", "False alarm")}>Mark false alarm</button>
                   <button className="secondary-button" type="button" onClick={() => updateCaseFromExpert("More data requested", "Request more data")}>Request more data</button>
+                  <button className="secondary-button" type="button" onClick={() => updateCaseFromExpert(selectedCase?.status ?? "Open", selectedCase?.expertDecision ?? null)}>Save operator measures</button>
                   <button className="primary-button" type="button" onClick={() => updateCaseFromExpert("Closed", selectedCase?.expertDecision ?? null)}>Close case</button>
                 </div>
               </section>
@@ -633,8 +643,8 @@ function App() {
               .filter((item) => item.status === "Awaiting expert review")
               .map((item) => ({ caseItem: item, record: historyRecords.find((record) => record.measurement_id === item.measurementId) }))}
             onOpenCase={(measurementId) => {
-              void selectMeasurement(measurementId);
               patchState({ activeModule: "anomaly-detection", selectedMeasurementId: measurementId });
+              void selectMeasurement(measurementId);
             }}
           />
         )}
@@ -651,6 +661,22 @@ function App() {
         )}
 
         <BuildInfoFooter />
+        <PlantColleague
+          role={workflow.role}
+          activeModule={workflow.activeModule}
+          currentAnalysis={currentAnalysis}
+          selectedMeasurementId={workflow.selectedMeasurementId}
+          historyRecords={historyRecords}
+          periodHistory={periodHistory}
+          kpis={kpis}
+          anomalyCases={workflow.anomalyCases}
+          monthlyReports={workflow.monthlyReports}
+          selectedMonth={selectedMonth}
+          messageThreads={workflow.messageThreads}
+          dataSource={dataSource}
+          isApiConnected={isApiConnected}
+          isAnalyzeAvailable={isAnalyzeAvailable}
+        />
       </main>
 
       {drawerOpen && formState && (
