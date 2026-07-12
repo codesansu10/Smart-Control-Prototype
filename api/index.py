@@ -155,9 +155,9 @@ def to_jsonable(value: Any) -> Any:
 
 @lru_cache(maxsize=1)
 def get_assets() -> tuple[Any, Any]:
-    model_path = MODEL_DIR / "smartcontrol_isolation_forest.joblib"
+    model_path = MODEL_DIR / "smartcontrol_runtime_model.joblib"
     reference_path = (
-        MODEL_DIR / "smartcontrol_interpretation_reference.joblib"
+        MODEL_DIR / "smartcontrol_runtime_reference.joblib"
     )
 
     if not model_path.exists():

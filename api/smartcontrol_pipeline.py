@@ -3,11 +3,6 @@ import joblib
 import numpy as np
 import warnings
 
-from sklearn.ensemble import IsolationForest
-from sklearn.linear_model import LinearRegression
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
-
 
 def require_pandas():
     import pandas as pd
@@ -357,6 +352,10 @@ def train_isolation_forest(
     contamination=0.01,
     random_state=42
 ):
+    from sklearn.ensemble import IsolationForest
+    from sklearn.pipeline import Pipeline
+    from sklearn.preprocessing import StandardScaler
+
     X_model = prepare_model_input(
         df,
         use_engineered_features=True
@@ -450,6 +449,8 @@ def calculate_robust_z_score(
 
 
 def fit_interpretation_reference(df):
+    from sklearn.linear_model import LinearRegression
+
     df_reference = add_engineered_features(df)
 
     normal_rows = df_reference[
@@ -974,11 +975,92 @@ def predict_expected_gas_flow(row, interpretation_reference):
         "gas_input_features"
     ]
 
+    gas_model = interpretation_reference["gas_flow_model"]
+    if isinstance(gas_model, dict):
+        values = np.array(
+            [
+                float(row[feature])
+                for feature in gas_features
+            ],
+            dtype=float
+        )
+        return float(
+            np.dot(values, np.array(gas_model["coef"], dtype=float))
+            + float(gas_model["intercept"])
+        )
+
     return predict_with_feature_order(
-        interpretation_reference["gas_flow_model"],
+        gas_model,
         row,
         gas_features
     )[0]
+
+
+def average_path_length(n_samples):
+    n_samples = np.asarray(n_samples, dtype=float)
+    output = np.zeros_like(n_samples, dtype=float)
+
+    two_mask = n_samples == 2
+    output[two_mask] = 1.0
+
+    many_mask = n_samples > 2
+    output[many_mask] = (
+        2.0
+        * (
+            np.log(n_samples[many_mask] - 1.0)
+            + 0.5772156649015329
+        )
+        - 2.0
+        * (n_samples[many_mask] - 1.0)
+        / n_samples[many_mask]
+    )
+
+    return output
+
+
+def runtime_tree_leaf(row_values, tree):
+    node = 0
+    children_left = tree["children_left"]
+    children_right = tree["children_right"]
+    features = tree["features"]
+    tree_features = tree["tree_features"]
+    thresholds = tree["thresholds"]
+
+    while children_left[node] != children_right[node]:
+        feature = features[tree_features[node]]
+        if row_values[feature] <= thresholds[node]:
+            node = children_left[node]
+        else:
+            node = children_right[node]
+
+    return node
+
+
+def runtime_isolation_forest_decision_function(model, row):
+    features = model["feature_names"]
+    values = numeric_model_array(row, features)[0]
+    scaled_values = (
+        values
+        - np.asarray(model["scaler_mean"], dtype=float)
+    ) / np.asarray(model["scaler_scale"], dtype=float)
+
+    depths = 0.0
+    for tree in model["trees"]:
+        leaf = runtime_tree_leaf(scaled_values, tree)
+        depths += (
+            tree["decision_path_lengths"][leaf]
+            + tree["average_path_length_per_tree"][leaf]
+            - 1.0
+        )
+
+    denominator = (
+        len(model["trees"])
+        * float(model["average_path_length_max_samples"])
+    )
+    score = 2.0 ** (-depths / denominator) if denominator else 1.0
+    score_samples = -score
+
+    return score_samples - float(model["offset"])
 
 
 def classify_robust_deviation(z_score):
@@ -1199,16 +1281,24 @@ def apply_rule_alerts_to_record(record):
 
 def predict_anomaly_for_record(record, trained_pipeline):
     output = add_engineered_features_to_record(record)
-    prediction = predict_with_feature_order(
-        trained_pipeline,
-        output,
-        MODEL_FEATURES_ENGINEERED
-    )[0]
-    anomaly_score = -decision_function_with_feature_order(
-        trained_pipeline,
-        output,
-        MODEL_FEATURES_ENGINEERED
-    )[0]
+    if isinstance(trained_pipeline, dict):
+        decision = runtime_isolation_forest_decision_function(
+            trained_pipeline,
+            output
+        )
+        prediction = -1 if decision < 0 else 1
+        anomaly_score = -decision
+    else:
+        prediction = predict_with_feature_order(
+            trained_pipeline,
+            output,
+            MODEL_FEATURES_ENGINEERED
+        )[0]
+        anomaly_score = -decision_function_with_feature_order(
+            trained_pipeline,
+            output,
+            MODEL_FEATURES_ENGINEERED
+        )[0]
 
     output["anomaly_score"] = anomaly_score
     output["anomaly_flag"] = (

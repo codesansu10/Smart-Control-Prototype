@@ -58,7 +58,9 @@ def test_asset_loading():
 
     assert model is not None
     assert reference is not None
+    assert model["runtime_format"] == "smartcontrol_isolation_forest_v1"
     assert "gas_flow_model" in reference
+    assert isinstance(reference["gas_flow_model"], dict)
 
 
 def test_health_endpoint():
