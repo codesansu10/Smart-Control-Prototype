@@ -5,7 +5,23 @@ Thumbs.db
 .idea/
 .vscode/
 
-# Node (if a build step is ever added)
+# Node
 node_modules/
 dist/
 *.log
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment and deployment-local state
+.env
+.env.*
+!.env.example
+.vercel/
+.vercel_python_packages/

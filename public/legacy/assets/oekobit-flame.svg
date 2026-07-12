@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<svg id="Ebene_1" data-name="Ebene 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 141.7 113.4">
+  <defs>
+    <linearGradient id="ok_flame_grad1" x1="3.88" y1="1.37" x2="141.38" y2="112.67" gradientTransform="translate(0 112.28) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#95c11f"></stop>
+      <stop offset=".1" stop-color="#5ac24d"></stop>
+      <stop offset=".3" stop-color="#00be74"></stop>
+      <stop offset=".4" stop-color="#00b997"></stop>
+      <stop offset=".6" stop-color="#00b1b3"></stop>
+      <stop offset=".7" stop-color="#00a7c6"></stop>
+      <stop offset=".8" stop-color="#009bce"></stop>
+      <stop offset="1" stop-color="#008eca"></stop>
+    </linearGradient>
+    <linearGradient id="ok_flame_grad2" x1="12.86" y1="11.25" x2="67.91" y2="55.79" gradientTransform="translate(0 112.28) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#95c11f"></stop>
+      <stop offset=".1" stop-color="#5ac24d"></stop>
+      <stop offset=".3" stop-color="#00be74"></stop>
+      <stop offset=".4" stop-color="#00b997"></stop>
+      <stop offset=".6" stop-color="#00b1b3"></stop>
+      <stop offset=".7" stop-color="#00a7c6"></stop>
+      <stop offset=".8" stop-color="#009bce"></stop>
+      <stop offset="1" stop-color="#008eca"></stop>
+    </linearGradient>
+  </defs>
+  <path fill="url(#ok_flame_grad1)" d="M136.1,5.6v51.1c0,28.2-22.9,51.1-51.1,51.1H11.3c-3.2,0-5.7-2.6-5.7-5.7v-45.4C5.6,28.5,28.5,5.6,56.7,5.6h79.4M141.7,0H56.7C25.4,0,0,25.4,0,56.7v45.4c0,6.3,5.1,11.3,11.3,11.3h73.7c31.3,0,56.7-25.4,56.7-56.7V0h0Z"></path>
+  <path fill="url(#ok_flame_grad2)" d="M62.4,62.3v17.1c0,9.4-7.7,17.1-17.1,17.1h-28.4v-17.1c0-9.4,7.7-17.1,17.1-17.1h28.4M68,56.7h-34c-12.5,0-22.7,10.2-22.7,22.7v18.1c0,2.5,2,4.5,4.5,4.5h29.5c12.5,0,22.7-10.2,22.7-22.7v-22.7h0v.1Z"></path>
+</svg>

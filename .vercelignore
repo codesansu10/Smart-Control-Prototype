@@ -1,0 +1,15 @@
+.venv
+venv
+node_modules
+dist
+.pytest_cache
+__pycache__
+*.pyc
+htmlcov
+.coverage
+work
+.vercel_python_packages
+tests
+source-data
+public/legacy
+archive
