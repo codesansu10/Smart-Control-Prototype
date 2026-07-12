@@ -28,8 +28,14 @@ export function generateHtmlReport(args: {
   context?: AnalysisContext | null;
   generatedAt: string;
   limitations: string[];
+  workflow?: {
+    caseStatus: string;
+    expertDecision: string;
+    expertReply: string;
+    operatorMeasures: string;
+  };
 }): string {
-  const { analysis, context, history, kpis, scenario, periodLabel, dataSource, generatedAt, limitations } = args;
+  const { analysis, context, history, kpis, scenario, periodLabel, dataSource, generatedAt, limitations, workflow } = args;
   const unifiedStatus = getUnifiedStatus(analysis);
   const diagnostics = analysis.diagnostics;
   const anomalyThreshold = diagnostics?.anomaly_threshold ?? 0;
@@ -117,9 +123,17 @@ export function generateHtmlReport(args: {
         short_explanation: analysis.short_explanation,
         recommended_action: analysis.recommended_action,
         expert_review_required: analysis.expert_review_required,
-        trigger_source: analysis.trigger_source ?? "None"
+        trigger_source: analysis.trigger_source ?? "None",
+        case_status: workflow?.caseStatus ?? "Open",
+        expert_decision: workflow?.expertDecision ?? "Pending"
       })}</table>
     </section>
+    ${workflow ? `<section><h2>Workflow decision</h2><table>${rowsFromObject({
+      case_status: workflow.caseStatus,
+      expert_decision: workflow.expertDecision,
+      expert_reply: workflow.expertReply || "None",
+      operator_measures: workflow.operatorMeasures || "None"
+    })}</table></section>` : ""}
     ${contextRows ? `<section><h2>Current Data Context</h2><table>${contextRows}</table></section>` : ""}
     ${aiOnly ? `<section class="callout"><h2>AI-only anomaly</h2><p>No individual deterministic rule threshold was crossed. The anomaly was raised by the multivariate Isolation Forest model.</p><table>${rowsFromObject({
       "Rule-Based Status": analysis.overall_rule_status,
