@@ -12,10 +12,7 @@
   "functions": {
     "api/index.py": {
       "maxDuration": 60,
-      "includeFiles": [
-        "api/models/**",
-        "public/data/dashboard-history.json"
-      ],
+      "includeFiles": "public/data/dashboard-history.json",
       "excludeFiles": "{public/legacy/**,archive/**,source-data/**,tests/**,**/__pycache__/**,**/.pytest_cache/**,**/*.pyc,**/site-packages/**/tests/**,**/site-packages/**/test/**,**/site-packages/**/testing/**,**/site-packages/**/*.pyi}"
     }
   }
